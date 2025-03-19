@@ -1,0 +1,199 @@
+import { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import pb from '../pb/pocketbase';
+
+// Auth types
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  role: string;
+  points: number;
+}
+
+interface AuthContextType {
+  isAuthenticated: boolean;
+  user: User | null;
+  login: (email: string, password: string, remember?: boolean) => Promise<any>;
+  logout: () => void;
+  register: (data: RegisterUserData) => Promise<any>;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+interface RegisterUserData {
+  email: string;
+  password: string;
+  passwordConfirm: string;
+  name: string;
+  avatar?: File;
+  role?: string;
+  points?: number;
+}
+
+// Create the auth context
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Auth provider component
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(pb.authStore.isValid);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
+
+  // Register mutation
+  const registerMutation = useMutation({
+    mutationFn: async (data: RegisterUserData) => {
+      const formData = {
+        email: data.email,
+        password: data.password,
+        passwordConfirm: data.passwordConfirm,
+        name: data.name,
+        role: data.role || 'customer',
+        points: data.points || 0,
+      };
+
+      const record = await pb.collection('users').create(formData);
+      
+      // Upload avatar if provided
+      if (data.avatar) {
+        const formDataWithFile = new FormData();
+        formDataWithFile.append('avatar', data.avatar);
+        await pb.collection('users').update(record.id, formDataWithFile);
+      }
+      
+      // Automatically log in after registration
+      await pb.collection('users').authWithPassword(data.email, data.password);
+      
+      return record;
+    },
+    onSuccess: () => {
+      loadUserData();
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    }
+  });
+
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: async ({ email, password, remember = true }: 
+      { email: string; password: string; remember?: boolean }) => {
+      return await pb.collection('users').authWithPassword(email, password);
+    },
+    onSuccess: () => {
+      loadUserData();
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    }
+  });
+
+  // Function to load user data
+  const loadUserData = async () => {
+    try {
+      if (pb.authStore.isValid) {
+        setIsAuthenticated(true);
+        
+        // Get the full user record
+        const userData = pb.authStore.model;
+        
+        if (userData) {
+          const avatarUrl = userData.avatar 
+            ? pb.files.getUrl(userData, userData.avatar, { thumb: '100x100' })
+            : undefined;
+            
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            avatar: avatarUrl,
+            role: userData.role || 'customer',
+            points: userData.points || 0
+          });
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    } catch (err) {
+      console.error('Error loading user data:', err);
+      setError(err instanceof Error ? err : new Error('Failed to load user data'));
+    }
+  };
+
+  // Listen for auth changes
+  useEffect(() => {
+    // Initial load
+    const initializeAuth = async () => {
+      setIsLoading(true);
+      await loadUserData();
+      setIsLoading(false);
+    };
+    
+    initializeAuth();
+    
+    // Listen to auth store changes
+    pb.authStore.onChange(() => {
+      setIsAuthenticated(pb.authStore.isValid);
+      loadUserData();
+    });
+  }, []);
+
+  // Auth functions
+  const login = async (email: string, password: string, remember = true) => {
+    setIsLoading(true);
+    try {
+      const result = await loginMutation.mutateAsync({ email, password, remember });
+      setIsLoading(false);
+      return result;
+    } catch (err) {
+      setIsLoading(false);
+      setError(err instanceof Error ? err : new Error('Login failed'));
+      throw err;
+    }
+  };
+
+  const logout = () => {
+    pb.authStore.clear();
+    setIsAuthenticated(false);
+    setUser(null);
+    queryClient.invalidateQueries({ queryKey: ['user'] });
+  };
+
+  const register = async (data: RegisterUserData) => {
+    setIsLoading(true);
+    try {
+      const result = await registerMutation.mutateAsync(data);
+      setIsLoading(false);
+      return result;
+    } catch (err) {
+      setIsLoading(false);
+      setError(err instanceof Error ? err : new Error('Registration failed'));
+      throw err;
+    }
+  };
+
+  const value = {
+    isAuthenticated,
+    user,
+    login,
+    logout,
+    register,
+    isLoading,
+    error
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// Hook to use the auth context
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

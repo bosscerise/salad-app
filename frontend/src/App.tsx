@@ -1,14 +1,15 @@
-import React, { lazy, Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { 
   BrowserRouter as Router, 
   Routes, 
   Route, 
   Link 
 } from "react-router-dom";
+import { AuthProvider } from "./hooks/useAuth";
+import { ThemeProvider } from './contexts/ThemeContext';
 
 import "./App.css";
 import { CartProvider } from "./contexts/CartContext";
-import Header from "./components/Header";
 //import NavBar from "./components/NavBar";
 //import CreatAccount from "./pages/Login/CreatAccount";
 
@@ -16,6 +17,8 @@ import Header from "./components/Header";
 // Lazy load components for better performance
 const Homepage = lazy(() => import("./pages/HomePage/HomePage"));
 const Menu = lazy(() => import("./pages/Menu/Menu"));
+const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
+const AuthForm = lazy(() => import("./pages/AuthPage/AuthForm"));
 // const dashboard = lazy(() => import("./pages/dashboard/dashboard"));
 // const residentlist = lazy(() => import("./pages/residents/residentlist"));
 // const residentdetails = lazy(() => import("./pages/residents/residentdetails"));
@@ -57,24 +60,31 @@ function NotFound() {
 
 function App() {
   return (
-    <Router>
-      <div className="container w-full mx-auto">
-        {/* Suspense provides a fallback while components are loading */}
-        <Suspense fallback={<LoadingFallback />}>
-          <CartProvider>
-            <div className="min-h-screen bg-gray-100">
-              <Header />
-              <Routes>
-                <Route path="/" element={<Homepage />} />
-                <Route path="/menu" element={<Menu />} />
-                {/* Catch-all route for undefined paths */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </div>
-          </CartProvider>
-        </Suspense>
-      </div>
-    </Router>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="container w-full mx-auto">
+            {/* Suspense provides a fallback while components are loading */}
+            <Suspense fallback={<LoadingFallback />}>
+              <CartProvider>
+                <div className="min-h-screen bg-gray-100">
+                  {/*<Header />*/}
+                  <Routes>
+                    <Route path="/" element={<Homepage />} />
+                    <Route path="/menu" element={<Menu />} />
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/authform" element={<AuthForm />} />
+                    {/* <Route path="/dashboard" element={<dashboard />} /> */}
+                    {/* Catch-all route for undefined paths */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
+              </CartProvider>
+            </Suspense>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
