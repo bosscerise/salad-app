@@ -19,6 +19,7 @@ const Homepage = lazy(() => import("./pages/HomePage/HomePage"));
 const Menu = lazy(() => import("./pages/Menu/Menu"));
 const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
 const AuthForm = lazy(() => import("./pages/AuthPage/AuthForm"));
+
 // const dashboard = lazy(() => import("./pages/dashboard/dashboard"));
 // const residentlist = lazy(() => import("./pages/residents/residentlist"));
 // const residentdetails = lazy(() => import("./pages/residents/residentdetails"));

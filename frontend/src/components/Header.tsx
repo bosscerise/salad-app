@@ -109,6 +109,7 @@ export default function Header({
         
         {/* Desktop navigation */}
         <div className="hidden lg:flex lg:gap-x-8">
+
           {navigation.map((item) => (
             <Link
               key={item.name}
