@@ -2,7 +2,10 @@ module salad-app
 
 go 1.24
 
-require github.com/pocketbase/pocketbase v0.25.5
+require (
+	github.com/labstack/echo/v4 v4.13.3
+	github.com/pocketbase/pocketbase v0.25.5
+)
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
