@@ -1,42 +1,29 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import compression from 'vite-plugin-compression'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+import svgr from 'vite-plugin-svgr'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
-  build: {
-    // Optimize chunk size
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom'],
-          'animations': ['framer-motion'],
-          'ui': ['@heroicons/react', 'lucide-react']
-        },
-        // Consistent naming to avoid issues
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
-      }
+  plugins: [svgr({ 
+    svgrOptions: {
+      icon: true,
+      svgo: true,
     },
-    // Minify CSS better
-    cssMinify: true,
-    // Target newer browsers for smaller bundles
-    target: 'es2020',
-    sourcemap: false
+    include: '**/*.svg',
+  }), tailwindcss(), react()],
+  base: "/salad-app/",
+  resolve: {
+    alias: {
+      '@assets': resolve(__dirname, 'src/assets'),
+    },
   },
-  // Enable dependency optimization
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'framer-motion']
+  assetsInclude: ['**/*.svg', '**/*.png', '**/*.jpg', '**/*.jpeg'],
+  build: {
+    assetsInlineLimit: 0,
   },
-  // Add cache busting for assets
-  server: {
-    fs: {
-      strict: true
-    }
-  },
-  plugins: [tailwindcss(), react(), compression()],
-  // Dynamically set the base path - NO base path for Vercel
-  base: process.env.VITE_BASE_PATH || "/salad-app",
 })
