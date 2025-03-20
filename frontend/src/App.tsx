@@ -1,6 +1,5 @@
 import React, { lazy, Suspense, PropsWithChildren } from "react";
-import { 
-  BrowserRouter as Router, 
+import {
   Routes, 
   Route, 
   Link,
@@ -115,9 +114,7 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <AppContent />
       </AuthProvider>
     </ThemeProvider>
   );
