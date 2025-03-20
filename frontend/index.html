@@ -1,12 +1,24 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Salad Shark - Fresh & Healthy</title>
+    <!-- Add error handling for asset loading -->
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.target && (e.target.src || e.target.href)) {
+          console.error('Asset loading error:', e.target.src || e.target.href);
+          if (!sessionStorage.getItem('reloaded')) {
+            sessionStorage.setItem('reloaded', 'true');
+            setTimeout(() => window.location.reload(), 1000);
+          }
+        }
+      }, true);
+    </script>
   </head>
-  <body style="background: linear-gradient(135deg, #e0f7fa,#a2d9a5);">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

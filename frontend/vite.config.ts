@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import compression from 'vite-plugin-compression'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,13 +13,18 @@ export default defineConfig({
           'vendor': ['react', 'react-dom', 'react-router-dom'],
           'animations': ['framer-motion'],
           'ui': ['@heroicons/react', 'lucide-react']
-        }
+        },
+        // Consistent naming to avoid issues
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     },
     // Minify CSS better
     cssMinify: true,
     // Target newer browsers for smaller bundles
-    target: 'es2020'
+    target: 'es2020',
+    sourcemap: false
   },
   // Enable dependency optimization
   optimizeDeps: {
@@ -30,6 +36,6 @@ export default defineConfig({
       strict: true
     }
   },
-  plugins: [tailwindcss(), react()],
+  plugins: [tailwindcss(), react(), compression()],
   base: "/salad-app",
 })
