@@ -12,12 +12,18 @@ interface User {
   points: number;
 }
 
+// Define the return types for auth operations
+interface AuthResponse {
+  token: string;
+  record: User;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
-  login: (email: string, password: string, remember?: boolean) => Promise<any>;
+  login: (email: string, password: string, remember?: boolean) => Promise<AuthResponse>;
   logout: () => void;
-  register: (data: RegisterUserData) => Promise<any>;
+  register: (data: RegisterUserData) => Promise<User>;
   isLoading: boolean;
   error: Error | null;
 }
@@ -77,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: async ({ email, password, remember = true }: 
+    mutationFn: async ({ email, password }: 
       { email: string; password: string; remember?: boolean }) => {
       return await pb.collection('users').authWithPassword(email, password);
     },
@@ -144,7 +150,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await loginMutation.mutateAsync({ email, password, remember });
       setIsLoading(false);
-      return result;
+      
+      // Transform the PocketBase response to match the AuthResponse type
+      const authResponse: AuthResponse = {
+        token: result.token,
+        record: {
+          id: result.record.id,
+          email: result.record.email,
+          name: result.record.name,
+          avatar: result.record.avatar ? pb.files.getUrl(result.record, result.record.avatar, { thumb: '100x100' }) : undefined,
+          role: result.record.role || 'customer',
+          points: result.record.points || 0
+        }
+      };
+      
+      return authResponse;
     } catch (err) {
       setIsLoading(false);
       setError(err instanceof Error ? err : new Error('Login failed'));
@@ -164,7 +184,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await registerMutation.mutateAsync(data);
       setIsLoading(false);
-      return result;
+      
+      // Transform the PocketBase response to match the User type
+      const user: User = {
+        id: result.id,
+        email: result.email,
+        name: result.name,
+        avatar: result.avatar ? pb.files.getUrl(result, result.avatar, { thumb: '100x100' }) : undefined,
+        role: result.role || 'customer',
+        points: result.points || 0
+      };
+      
+      return user;
     } catch (err) {
       setIsLoading(false);
       setError(err instanceof Error ? err : new Error('Registration failed'));
