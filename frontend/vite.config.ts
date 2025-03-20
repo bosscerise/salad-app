@@ -22,7 +22,7 @@ export default defineConfig({
     },
     include: '**/*.svg',
   }), tailwindcss(), react()],
-  base: process.env.VITE_BASE_PATH || "/salad-app/",
+  base: process.env.VITE_BASE_PATH || "/salad-app",
   resolve: {
     alias: {
       '@assets': resolve(__dirname, 'src/assets'),
