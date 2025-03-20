@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Header from '../../components/Header';
 import HeroSection from '../../components/HeroSection/HeroSection';
 import FeaturedSalads from '../../components/FeaturedSalads/FeaturedSalads';
@@ -13,11 +13,11 @@ export default function HomePage() {
   const [showConfetti, setShowConfetti] = useState(false);
   
   // For authentication in the header component
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userName, setUserName] = useState('John Doe');
+  const [isAuthenticated] = useState(false);
+  const [userName] = useState('John Doe');
 
-  const addToCart = (id) => {
-    setCartCount(cartCount + 1);
+  const addToCart = (id: number) => {
+    setCartCount(prevCount => prevCount + 1);
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 3000);
   };
@@ -29,7 +29,6 @@ export default function HomePage() {
         isAuthenticated={isAuthenticated}
         userName={userName}
       />
-      
       <main>
         <HeroSection showConfetti={showConfetti} />
         <FeaturedSalads addToCart={addToCart} />
@@ -37,7 +36,6 @@ export default function HomePage() {
         <PricingSection />
         <ContactSection />
       </main>
-
       <Footer navigation={navigation} />
     </div>
   );
