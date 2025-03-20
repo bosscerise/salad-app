@@ -1,10 +1,10 @@
-import { lazy, Suspense } from "react";
+import React, { lazy, Suspense, PropsWithChildren } from "react";
 import { 
-  BrowserRouter, 
-  HashRouter, 
+  BrowserRouter as Router, 
   Routes, 
   Route, 
-  Link 
+  Link,
+  useLocation
 } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -38,6 +38,39 @@ const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
 // const paymentsresident = lazy(() => import("./pages/payments/paymentsresident"));
 
 
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends React.Component<PropsWithChildren, ErrorBoundaryState> {
+  constructor(props: PropsWithChildren) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
+          <h2 className="mb-4 text-2xl font-bold text-gray-800">Something went wrong</h2>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 text-white transition-colors rounded-lg bg-primary hover:bg-primary-dark"
+          >
+            Reload page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+
 // Loading Fallback Component
 function LoadingFallback() {
   return (
@@ -58,32 +91,43 @@ function NotFound() {
   );
 }
 
-// Detect if we're on Vercel from the URL
-const isVercel = window.location.hostname.includes('vercel.app');
-const Router = isVercel ? BrowserRouter : HashRouter;
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  
+  return null;
+}
 
-function App() {
+function App() {  
   return (
     <ThemeProvider>
       <AuthProvider>
         <Router>
+          <ScrollToTop/>
           <div className="container w-full mx-auto">
             {/* Suspense provides a fallback while components are loading */}
-            <Suspense fallback={<LoadingFallback />}>
-              <CartProvider>
-                <div className="min-h-screen bg-gray-100">
-                  {/*<Header />*/}
-                  <Routes>
-                    <Route path="/" element={<Homepage />} />
-                    <Route path="/menu" element={<Menu />} />
-                    <Route path="/auth" element={<AuthPage />} />
-                    {/* <Route path="/dashboard" element={<dashboard />} /> */}
-                    {/* Catch-all route for undefined paths */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
-              </CartProvider>
-            </Suspense>
+            <ErrorBoundary>
+              <main className="min-h-screen">
+                <Suspense fallback={<LoadingFallback />}>
+                  <CartProvider>
+                    <div className="min-h-screen bg-gray-100">
+                      {/*<Header />*/}
+                      <Routes location={location} key={location.pathname}>
+                        <Route path="/" element={<Homepage />} />
+                        <Route path="/menu" element={<Menu />} />
+                        <Route path="/auth" element={<AuthPage />} />
+                        {/* <Route path="/dashboard" element={<dashboard />} /> */}
+                        {/* Catch-all route for undefined paths */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </div>
+                  </CartProvider>
+                </Suspense>
+              </main>
+            </ErrorBoundary>
           </div>
         </Router>
       </AuthProvider>
@@ -91,4 +135,4 @@ function App() {
   );
 }
 
-export default App;
+export default React.memo(App);

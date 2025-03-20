@@ -1,5 +1,6 @@
 {
   "name": "frontend",
+  "homepage": "https://bosscerise.github.io/bosscerise/salad-app/",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +8,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "yarn run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -43,6 +46,7 @@
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@tailwindcss/cli": "^4.0.8",
+    "@types/node": "^22.13.10",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
