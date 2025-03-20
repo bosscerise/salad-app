@@ -13,10 +13,11 @@ export default function HomePage() {
   const [showConfetti, setShowConfetti] = useState(false);
   
   // For authentication in the header component
-  const [isAuthenticated] = useState(false);
-  const [userName] = useState('John Doe');
+  // const [isAuthenticated] = useState(false);
+  // const [userName] = useState('John Doe');
 
-  const addToCart = (id: number) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const addToCart = (_id: number) => {
     setCartCount(prevCount => prevCount + 1);
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 3000);
@@ -26,8 +27,6 @@ export default function HomePage() {
     <div className="min-h-screen text-gray-800 bg-gradient-to-br from-amber-50 via-lime-50 to-emerald-50">
       <Header 
         cartItems={cartCount}
-        isAuthenticated={isAuthenticated}
-        userName={userName}
       />
       <main>
         <HeroSection showConfetti={showConfetti} />

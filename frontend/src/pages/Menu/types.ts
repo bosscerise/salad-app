@@ -62,4 +62,6 @@ export interface SuggestedCombination {
   extras: string[];
 }
 
+
+
 export type RecommendationType = 'balanced' | 'protein' | 'low-cal';

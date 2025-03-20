@@ -34,9 +34,7 @@ func (p *MyCustomPlugin) OnBeforeServe(ctx context.Context, app *pocketbase.Pock
 		})
 		return nil
 	})
-	})
-
-	return nil
+	}
 }
 
 // Setup is called after the PocketBase app is initialized.
