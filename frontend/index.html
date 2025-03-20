@@ -5,17 +5,28 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Salad Shark - Fresh & Healthy</title>
-    <!-- Add error handling for asset loading -->
     <script>
-      window.addEventListener('error', function(e) {
-        if (e.target && (e.target.src || e.target.href)) {
-          console.error('Asset loading error:', e.target.src || e.target.href);
-          if (!sessionStorage.getItem('reloaded')) {
-            sessionStorage.setItem('reloaded', 'true');
-            setTimeout(() => window.location.reload(), 1000);
-          }
+      // Detect deployment platform and fix paths
+      (function() {
+        const isVercel = window.location.hostname.includes('vercel.app');
+        if (isVercel) {
+          // For Vercel - fix paths if they contain /salad-app/ incorrectly
+          window.addEventListener('error', function(e) {
+            if (e.target && (e.target.src || e.target.href)) {
+              const url = e.target.src || e.target.href;
+              if (url.includes('/salad-app/assets/')) {
+                // Fix the incorrect path by removing /salad-app
+                const correctedUrl = url.replace('/salad-app/assets/', '/assets/');
+                console.log('Correcting URL:', url, 'to', correctedUrl);
+                if (e.target.src) e.target.src = correctedUrl;
+                if (e.target.href) e.target.href = correctedUrl;
+                // Prevent the default error behavior
+                e.preventDefault();
+              }
+            }
+          }, true);
         }
-      }, true);
+      })();
     </script>
   </head>
   <body>

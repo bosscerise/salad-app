@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import compression from 'vite-plugin-compression'
 
+// Detect if we're deploying to Vercel
+const isVercel = process.env.VERCEL === '1'
+
 // https://vite.dev/config/
 export default defineConfig({
   build: {
@@ -37,5 +40,6 @@ export default defineConfig({
     }
   },
   plugins: [tailwindcss(), react(), compression()],
-  base: "/salad-app",
+  // Dynamically set the base path - NO base path for Vercel
+  base: isVercel ? '/' : '/salad-app/',
 })

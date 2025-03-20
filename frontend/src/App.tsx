@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { 
-  BrowserRouter as Router, 
+  BrowserRouter, 
+  HashRouter, 
   Routes, 
   Route, 
   Link 
@@ -56,6 +57,10 @@ function NotFound() {
     </div>
   );
 }
+
+// Detect if we're on Vercel from the URL
+const isVercel = window.location.hostname.includes('vercel.app');
+const Router = isVercel ? BrowserRouter : HashRouter;
 
 function App() {
   return (
