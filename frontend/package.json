@@ -1,5 +1,6 @@
 {
   "name": "frontend",
+  "homepage": "https://bosscerise.github.io/bosscerise/salad-app/",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +8,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "yarn run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -25,6 +28,7 @@
     "clsx": "^2.1.1",
     "dlx": "^0.2.1",
     "framer-motion": "^12.4.7",
+    "gh-pages": "^6.3.0",
     "init": "^0.1.2",
     "lucide-react": "^0.475.0",
     "pocketbase": "^0.25.1",
