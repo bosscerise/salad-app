@@ -1,0 +1,2 @@
+pb_data/, *.exe, frontend/dist/
+node_modules
