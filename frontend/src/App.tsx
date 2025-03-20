@@ -18,8 +18,6 @@ import { CartProvider } from "./contexts/CartContext";
 const Homepage = lazy(() => import("./pages/HomePage/HomePage"));
 const Menu = lazy(() => import("./pages/Menu/Menu"));
 const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
-const AuthForm = lazy(() => import("./pages/AuthPage/AuthForm"));
-
 // const dashboard = lazy(() => import("./pages/dashboard/dashboard"));
 // const residentlist = lazy(() => import("./pages/residents/residentlist"));
 // const residentdetails = lazy(() => import("./pages/residents/residentdetails"));
@@ -74,7 +72,6 @@ function App() {
                     <Route path="/" element={<Homepage />} />
                     <Route path="/menu" element={<Menu />} />
                     <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/authform" element={<AuthForm />} />
                     {/* <Route path="/dashboard" element={<dashboard />} /> */}
                     {/* Catch-all route for undefined paths */}
                     <Route path="*" element={<NotFound />} />
