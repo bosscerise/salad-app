@@ -25,7 +25,7 @@ export const featuredSalads: Salad[] = [
     name: "Nonna's Caesar",
     tagline: "A classic reimagined",
     price: 8.50,
-    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=400&q=80",
     description: "Our signature Caesar salad with house-made dressing, crafted from an old family recipe. Crisp romaine hearts, shaved parmesan, and artisanal sourdough croutons create the perfect balance of creamy, crunchy, and savory flavors.",
     ingredients: ["Romaine Lettuce", "Parmesan Cheese", "Sourdough Croutons", "House Caesar Dressing", "Lemon Zest", "Fresh Cracked Pepper"],
     nutritionalInfo: {
@@ -45,7 +45,7 @@ export const featuredSalads: Salad[] = [
     name: "Tropical Twist",
     tagline: "A vacation in every bite",
     price: 9.00,
-    image: "https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80",
     description: "Transport yourself to an island paradise with this vibrant blend of juicy mango, creamy avocado, and crunchy jicama. Tossed with baby spinach and drizzled with our honey-lime vinaigrette for a refreshing escape from the ordinary.",
     ingredients: ["Baby Spinach", "Fresh Mango", "Avocado", "Jicama", "Red Bell Pepper", "Toasted Coconut", "Honey-Lime Vinaigrette"],
     nutritionalInfo: {
@@ -65,7 +65,7 @@ export const featuredSalads: Salad[] = [
     name: "Spicy Fiesta",
     tagline: "Bold flavors that dance",
     price: 9.50,
-    image: "https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=400&q=80",
+    image: "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&q=80",
     description: "Ignite your taste buds with this zesty Southwestern-inspired salad. Black beans, roasted corn, and cherry tomatoes sit atop a bed of crisp romaine, finished with avocado, tortilla strips, and our smoky chipotle-lime dressing.",
     ingredients: ["Romaine Lettuce", "Black Beans", "Fire-Roasted Corn", "Cherry Tomatoes", "Red Onion", "Avocado", "Tortilla Strips", "Chipotle-Lime Dressing"],
     nutritionalInfo: {
@@ -79,7 +79,7 @@ export const featuredSalads: Salad[] = [
     allergens: ["Corn"],
     bestWithDressing: "Chipotle-Lime",
     preparationTime: "5 mins"
- }
+  }
   // ,
   // {
   //   id: 4,
