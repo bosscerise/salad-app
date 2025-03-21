@@ -14,6 +14,8 @@ import "./App.css";
 const Homepage = lazy(() => import("./pages/HomePage/HomePage"));
 const Menu = lazy(() => import("./pages/Menu/Menu"));
 const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
+const RewardsPage = lazy(() => import("./pages/RewardsPage/RewardsPage"));
+
 
 // Error boundary state and component
 interface ErrorBoundaryState {
@@ -98,6 +100,7 @@ function AppContent() {
                   <Route path="/" element={<Homepage />} />
                   <Route path="/menu" element={<Menu />} />
                   <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/rewards" element={<RewardsPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
