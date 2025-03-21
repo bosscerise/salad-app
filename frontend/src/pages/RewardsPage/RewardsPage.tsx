@@ -59,11 +59,11 @@ const RewardsPage: React.FC = () => {
 };
 
 // Normal content with image
-const NormalContent = ({ isDarkMode }: { isDarkMode: boolean }) => (
+const NormalContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => (
   <div>
     <div className="mb-6 text-center">
       <h2 className="mb-2 text-2xl font-bold">Earn Points With Every Order</h2>
-      <p className="text-sm text-gray-500">Collect rewards and get special perks!</p>
+      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Collect rewards and get special perks!</p>
     </div>
     
     <div className="mb-6">
@@ -72,7 +72,7 @@ const NormalContent = ({ isDarkMode }: { isDarkMode: boolean }) => (
         alt="Rewards Program" 
         className="w-full h-auto rounded-lg shadow-md"
       />
-      <p className="mt-3 text-sm text-center text-gray-500">
+      <p className={`mt-3 text-sm text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
         Our tiered rewards program offers amazing benefits
       </p>
     </div>
@@ -102,7 +102,7 @@ const PrankContent = ({ isDarkMode }: { isDarkMode: boolean }) => {
         <h2 className="mb-2 text-2xl font-bold">
           "Rewards" Program <span className="text-pink-500">*wink*</span>
         </h2>
-        <p className="text-sm text-gray-500">arwaho nsaydo ryad rah fi lotfi yl3b domino khassar ma3za!</p>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>arwaho nsaydo ryad rah fi lotfi yl3b domino khassar ma3za!</p>
       </div>
       
       <div className="mb-6">
@@ -111,7 +111,7 @@ const PrankContent = ({ isDarkMode }: { isDarkMode: boolean }) => {
           alt="Shark Attack Rewards" 
           className="w-full h-auto rounded-lg shadow-md"
         />
-        <p className="mt-3 text-sm text-center text-gray-500">
+        <p className={`mt-3 text-sm text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
           Our rewards program has real bite! Literally...
         </p>
       </div>
@@ -124,7 +124,7 @@ const PrankContent = ({ isDarkMode }: { isDarkMode: boolean }) => {
         Sign Up (Button Runs Away)
       </button>
       
-      <p className="mt-4 text-xs text-center text-gray-500">
+      <p className={`mt-4 text-xs text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
         * All rewards may involve sharks. Swim at your own risk.
       </p>
     </div>
