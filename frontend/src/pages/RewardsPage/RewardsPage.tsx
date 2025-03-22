@@ -16,7 +16,7 @@ const RewardsPage: React.FC = () => {
         {/* Header and toggle */}
         <div className="mb-8 text-center">
           <h1 className="mb-4 text-3xl font-bold">
-            {prankMode ? "9irch yeedek fih 🦈" : "Rewards Program ✨"}
+            {prankMode ? "lyooomaa fifa hada 🦈 yakhsseerrrr" : "Rewards Program ✨"}
           </h1>
           
           <div className="inline-flex items-center">
@@ -102,7 +102,7 @@ const PrankContent = ({ isDarkMode }: { isDarkMode: boolean }) => {
         <h2 className="mb-2 text-2xl font-bold">
           "Rewards" Program <span className="text-pink-500">*wink*</span>
         </h2>
-        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>arwaho nsaydo ryad rah fi lotfi yl3b domino khassar ma3za!</p>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>liverpool 6 - 8 atletic bilbao</p>
       </div>
       
       <div className="mb-6">
