@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../hooks/useTheme';
+import hama from '../../assets/images/hama.jpg';
 
 const RewardsPage: React.FC = () => {
   const [prankMode, setPrankMode] = useState(false);
@@ -107,7 +108,7 @@ const PrankContent = ({ isDarkMode }: { isDarkMode: boolean }) => {
       
       <div className="mb-6">
         <img 
-          src="https://images.unsplash.com/photo-1560275619-4cc5fa59d3ae?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&q=80" 
+          src={hama} 
           alt="Shark Attack Rewards" 
           className="w-full h-auto rounded-lg shadow-md"
         />
