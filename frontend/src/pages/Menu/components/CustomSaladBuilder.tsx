@@ -163,7 +163,7 @@ const CustomSaladBuilder: React.FC<CustomSaladBuilderProps> = ({
   // Salad preview - sorted ingredients to display
   const displayIngredients = useMemo(() => {
     return Object.entries(selectedIngredients)
-      .filter(([, count]) => count > 0)
+      .filter(([ingredientId, count]) => count > 0)
       .map(([id, count]) => {
         const ingredient = ingredients?.find(i => i.id === id);
         return {
@@ -244,7 +244,7 @@ const CustomSaladBuilder: React.FC<CustomSaladBuilderProps> = ({
         <div className={`p-6 border-b ${
           isDarkMode ? 'border-gray-700 bg-gray-850' : 'border-gray-100 bg-gray-50'
         }`}>
-          <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className={`text-2xl md:text-3xl font-bold ${
                 isDarkMode ? 'text-white' : 'text-gray-800'
@@ -326,7 +326,7 @@ const CustomSaladBuilder: React.FC<CustomSaladBuilderProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
-                  className="grid grid-cols-1 gap-3 md:grid-cols-2"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-3"
                 >
                   {currentIngredients.map(ingredient => (
                     <IngredientItem
@@ -461,7 +461,7 @@ const CustomSaladBuilder: React.FC<CustomSaladBuilderProps> = ({
                   Suggestions
                 </h3>
                 
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                   {suggestedCombinations.map(combo => (
                     <button
                       key={combo.id}
@@ -503,7 +503,7 @@ const CustomSaladBuilder: React.FC<CustomSaladBuilderProps> = ({
               <div className={`rounded-xl p-4 ${
                 isDarkMode ? 'bg-gray-750' : 'bg-gray-50'
               }`}>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex justify-between items-center mb-3">
                   <h3 className={`text-lg font-medium ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
@@ -596,7 +596,7 @@ const CustomSaladBuilder: React.FC<CustomSaladBuilderProps> = ({
               } shadow-xl`}
             >
               <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex justify-between items-center mb-6">
                   <h3 className={`text-xl font-bold ${
                     isDarkMode ? 'text-white' : 'text-gray-800'
                   }`}>
@@ -660,41 +660,41 @@ const CustomSaladBuilder: React.FC<CustomSaladBuilderProps> = ({
                         Répartition des Macronutriments
                       </div>
                       
-                      <div className="flex h-5 overflow-hidden rounded-full">
+                      <div className="h-5 flex rounded-full overflow-hidden">
                         {totals.protein + totals.carbs + totals.fats > 0 && (
                           <>
                             <div 
-                              className="flex items-center justify-center h-full bg-amber-500"
+                              className="bg-amber-500 h-full flex items-center justify-center"
                               style={{ 
                                 width: `${(totals.protein / (totals.protein + totals.carbs + totals.fats)) * 100}%` 
                               }}
                             >
                               {totals.protein >= 10 && (
-                                <span className="px-1 text-xs font-medium text-white">
+                                <span className="text-xs text-white font-medium px-1">
                                   {Math.round(totals.protein)}g
                                 </span>
                               )}
                             </div>
                             <div 
-                              className="flex items-center justify-center h-full bg-blue-500"
+                              className="bg-blue-500 h-full flex items-center justify-center"
                               style={{ 
                                 width: `${(totals.carbs / (totals.protein + totals.carbs + totals.fats)) * 100}%` 
                               }}
                             >
                               {totals.carbs >= 10 && (
-                                <span className="px-1 text-xs font-medium text-white">
+                                <span className="text-xs text-white font-medium px-1">
                                   {Math.round(totals.carbs)}g
                                 </span>
                               )}
                             </div>
                             <div 
-                              className="flex items-center justify-center h-full bg-red-500"
+                              className="bg-red-500 h-full flex items-center justify-center"
                               style={{ 
                                 width: `${(totals.fats / (totals.protein + totals.carbs + totals.fats)) * 100}%` 
                               }}
                             >
                               {totals.fats >= 10 && (
-                                <span className="px-1 text-xs font-medium text-white">
+                                <span className="text-xs text-white font-medium px-1">
                                   {Math.round(totals.fats)}g
                                 </span>
                               )}

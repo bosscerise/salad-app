@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Filter } from 'lucide-react';
 import Header from '../../components/Header';
 
 // Components
@@ -12,18 +13,17 @@ import LoadingSpinner from './components/LoadingSpinner';
 
 // Data and Utils
 import { menuCategories, ingredientCategories, ingredients, salads, suggestedCombinations } from './data';
-import { getRecommendedIngredients } from './utils';
-// calculateCustomNutrition^^
+import { calculateCustomNutrition, getIngredientById, getRecommendedIngredients } from './utils';
 import { CustomSalad, SavedSalad, RecommendationType } from './types';
 
 // Main component
 export default function MenuPage() {
-  // Core states
+  // States
   const [selectedCategory, setSelectedCategory] = useState('featured');
   const [cartItems, setCartItems] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'premade' | 'custom'>('premade');
   const [favorites, setFavorites] = useState<number[]>([]);
   
@@ -33,31 +33,46 @@ export default function MenuPage() {
     ingredients: {},
     name: "My Custom Salad"
   });
-  // const [saladNameInput, setSaladNameInput] = useState("");
+  const [showCustomNutrition, setShowCustomNutrition] = useState(false);
+  const [saladNameInput, setSaladNameInput] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [savedCustomSalads, setSavedCustomSalads] = useState<SavedSalad[]>([]);
   const [selectedCombination, setSelectedCombination] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recommendationType, setRecommendationType] = useState<RecommendationType>('balanced');
 
   // For demonstration - toggle this to test authentication state in header
-  // const [isAuthenticated] = useState(false);
-  // const [userName] = useState('John Doe');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState('John Doe');
 
-  // Load data
   useEffect(() => {
     // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => clearTimeout(timer);
+    setTimeout(() => setIsLoading(false), 1000);
   }, []);
 
-  // Filter salads by selected category - memoized to avoid unnecessary recalculations
-  const filteredSalads = useMemo(() => 
-    salads.filter(salad => salad.category === selectedCategory || selectedCategory === 'featured'),
-    [selectedCategory]
+  // Filter salads by selected category
+  const filteredSalads = salads.filter(
+    salad => salad.category === selectedCategory || selectedCategory === 'featured'
   );
 
-  // Handle adding ingredient with useCallback to prevent unnecessary re-renders
-  const handleAddIngredient = useCallback((ingredientId: string) => {
+  // Filter ingredients by selected category
+  const filteredIngredients = ingredients.filter(
+    ingredient => ingredient.category === selectedIngredientCategory
+  );
+
+  // Toggle functions
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+    if (filtersOpen) setFiltersOpen(false);
+  };
+
+  const toggleFilters = () => {
+    setFiltersOpen(!filtersOpen);
+    if (mobileMenuOpen) setMobileMenuOpen(false);
+  };
+
+  const handleAddIngredient = (ingredientId: string) => {
     setCustomSalad(prev => {
       const currentCount = prev.ingredients[ingredientId] || 0;
       return {
@@ -68,46 +83,109 @@ export default function MenuPage() {
         }
       };
     });
-  }, []);
+  };
 
-  // Add to cart handler
-  const handleAddToCart = useCallback(() => {
+  const handleRemoveIngredient = (ingredientId: string) => {
+    setCustomSalad(prev => {
+      const currentCount = prev.ingredients[ingredientId] || 0;
+      const newCount = Math.max(0, currentCount - 1);
+      
+      const newIngredients = { ...prev.ingredients };
+      
+      if (newCount === 0) {
+        delete newIngredients[ingredientId];
+      } else {
+        newIngredients[ingredientId] = newCount;
+      }
+      
+      return {
+        ...prev,
+        ingredients: newIngredients
+      };
+    });
+  };
+
+  const resetCustomSalad = () => {
+    setCustomSalad({
+      ingredients: {},
+      name: "My Custom Salad"
+    });
+    setSaladNameInput("");
+    setIsEditingName(false);
+    setShowCustomNutrition(false);
+    setSelectedCombination(null);
+  };
+
+  const confirmSaladName = () => {
+    if (saladNameInput.trim()) {
+      setCustomSalad(prev => ({
+        ...prev,
+        name: saladNameInput.trim()
+      }));
+    }
+    setIsEditingName(false);
+  };
+
+  const nutrition = calculateCustomNutrition(customSalad.ingredients);
+  const selectedIngredientCount = Object.values(customSalad.ingredients).reduce((sum, count) => sum + count, 0);
+  
+  const handleAddToCart = () => {
     setCartItems(prev => prev + 1);
-  }, []);
+    setShowSuccessMessage(true);
+    setTimeout(() => setShowSuccessMessage(false), 3000);
+  };
 
-  // Get ingredient counts by category
-  const getIngredientCounts = useCallback((category: string) => {
+  const addCustomSaladToCart = () => {
+    // Only add if there are ingredients selected
+    if (selectedIngredientCount > 0) {
+      setCartItems(prev => prev + 1);
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+    }
+  };
+
+  const getIngredientCounts = (category: string) => {
     return Object.entries(customSalad.ingredients)
       .filter(([id]) => ingredients.find(ing => ing.id === id)?.category === category)
-      .reduce((sum, [, count]) => sum + count, 0);
-  }, [customSalad.ingredients]);
+      .reduce((sum, [_, count]) => sum + count, 0);
+  };
 
-  // Toggle favorite
-  const toggleFavorite = useCallback((id: number) => {
+  const toggleFavorite = (id: number) => {
     setFavorites(prev => 
       prev.includes(id) 
         ? prev.filter(item => item !== id) 
         : [...prev, id]
     );
-  }, []);
+  };
 
-  // Load saved salad
-  const loadSavedSalad = useCallback((savedSalad: SavedSalad) => {
+  const saveSalad = () => {
+    if (selectedIngredientCount > 0) {
+      const newSavedSalad = {
+        id: Date.now().toString(),
+        name: customSalad.name,
+        ingredients: {...customSalad.ingredients}
+      };
+      
+      setSavedCustomSalads(prev => [...prev, newSavedSalad]);
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+    }
+  };
+
+  const loadSavedSalad = (savedSalad: SavedSalad) => {
     setCustomSalad({
       name: savedSalad.name,
       ingredients: {...savedSalad.ingredients}
     });
-  }, []);
+  };
 
-  // Delete saved salad
-  const deleteSavedSalad = useCallback((id: string) => {
+  const deleteSavedSalad = (id: string) => {
     setSavedCustomSalads(prev => 
       prev.filter(salad => salad.id !== id)
     );
-  }, []);
+  };
 
-  // Apply suggested combination
-  const applySuggestedCombination = useCallback((id: string) => {
+  const applySuggestedCombination = (id: string) => {
     const combination = suggestedCombinations.find(combo => combo.id === id);
     if (!combination) return;
     
@@ -133,25 +211,29 @@ export default function MenuPage() {
     
     setSelectedCombination(id);
     setShowSuggestions(false);
-  }, []);
+  };
 
-  // Handle custom salad add to cart
-  const handleCustomSaladAddToCart = useCallback((saladId: string, _: number, ingredients: Record<string, number>) => {
+  // Handle adding a custom salad to cart with our new component format
+  const handleCustomSaladAddToCart = (saladId: string, quantity: number, ingredients: Record<string, number>) => {
     setCartItems(prev => prev + 1);
+    setShowSuccessMessage(true);
     
     // Update the custom salad state for consistency with the rest of the app
     setCustomSalad({
       name: saladId === 'custom-salad' ? 'My Custom Salad' : saladId,
       ingredients: ingredients
     });
-  }, []);
+    
+    setTimeout(() => setShowSuccessMessage(false), 3000);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-emerald-50 to-green-50">
-      {/* Header component */}
+      {/* Use the enhanced Header component with authentication */}
       <Header 
         cartItems={cartItems}
-        scrolled={false}
+        isAuthenticated={isAuthenticated} 
+        userName={userName}
       />
       
       {/* Mobile Menu */}
@@ -173,8 +255,8 @@ export default function MenuPage() {
       <MenuTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Main Content Area */}
-      <main className="px-2 pt-4 pb-16 mx-auto max-w-7xl sm:px-4 lg:px-8 sm:pb-20 sm:pt-6">
-        <div className="flex flex-col gap-6 md:flex-row">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 pb-16 sm:pb-20 pt-4 sm:pt-6">
+        <div className="flex flex-col md:flex-row gap-6">
           
           {/* Sidebar - Categories (Desktop) */}
           <MenuSidebar
@@ -214,7 +296,7 @@ export default function MenuPage() {
                     <motion.h2 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mb-6 text-2xl font-bold text-gray-800"
+                      className="text-2xl font-bold text-gray-800 mb-6"
                     >
                       Our {selectedCategory === 'featured' ? 'Featured' : menuCategories.find(c => c.id === selectedCategory)?.name} Salads
                     </motion.h2>

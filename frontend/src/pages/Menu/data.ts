@@ -19,7 +19,7 @@ export const ingredientCategories: IngredientCategory[] = [
 
 export const ingredients: Ingredient[] = [
   // Bases
-  { id: 'laitue', name: 'Laitue', category: 'base', price: 2.99, calories: 15, protein: 1, carbs: 2, fats: 0 },
+  { id: 'laitue', name: 'Laitue', category: 'base',emoji:'🧀', price: 2.99, calories: 15, protein: 1, carbs: 2, fats: 0 },
   { id: 'romaine', name: 'Romaine', category: 'base', price: 2.99, calories: 15, protein: 1, carbs: 2, fats: 0 },
   { id: 'rocket', name: 'Rocket', category: 'base', price: 3.49, calories: 25, protein: 2, carbs: 3, fats: 0 },
   { id: 'chou-vert', name: 'Chou Vert', category: 'base', price: 2.99, calories: 25, protein: 1, carbs: 5, fats: 0 },

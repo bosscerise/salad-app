@@ -12,7 +12,7 @@ import "./App.css";
 
 // Lazy load components
 const Homepage = lazy(() => import("./pages/HomePage/HomePage"));
-const Menu = lazy(() => import("./pages/Menu/Menu"));
+const Menu = lazy(() => import("./pages/Menu/BuildSaladPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
 const RewardsPage = lazy(() => import("./pages/RewardsPage/RewardsPage"));
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../hooks/useTheme';
+import haba from '../../assets/images/haba.jpg';
 
 interface HeroSectionProps {
   showConfetti?: boolean;
@@ -163,7 +164,7 @@ export default function HeroSection({ showConfetti = false }: HeroSectionProps) 
             
             <div className="relative overflow-hidden shadow-2xl rounded-3xl group">
               <img
-                src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200&q=80"
+                src={haba}
                 alt="Fresh gourmet salad with mixed greens and seasonal ingredients"
                 className="object-cover w-full h-auto transition-all duration-700 transform group-hover:scale-110"
               />

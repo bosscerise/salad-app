@@ -7,9 +7,10 @@ declare global {
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { resolve, dirname } from 'path'
+import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import svgr from 'vite-plugin-svgr'
+import path from "path"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -22,12 +23,12 @@ export default defineConfig({
     },
     include: '**/*.svg',
   }), tailwindcss(), react()],
-  base: process.env.VITE_BASE_PATH || "/salad-app",
   resolve: {
     alias: {
-      '@assets': resolve(__dirname, 'src/assets'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: process.env.VITE_BASE_PATH || "/salad-app",
   assetsInclude: ['**/*.svg', '**/*.png', '**/*.jpg', '**/*.jpeg'],
   build: {
     assetsInlineLimit: 0,

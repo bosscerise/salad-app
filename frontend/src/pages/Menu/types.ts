@@ -33,6 +33,7 @@ export interface Ingredient {
   protein: number;
   carbs: number;
   fats: number;
+  emoji?:string;
 }
 
 export interface IngredientCategory {
@@ -65,3 +66,24 @@ export interface SuggestedCombination {
 
 
 export type RecommendationType = 'balanced' | 'protein' | 'low-cal';
+
+export interface SpeechSynthesisOptions {
+  text: string;
+  voice?: SpeechSynthesisVoice | null;
+  rate?: number;
+  pitch?: number;
+  volume?: number;
+}
+
+export interface UseSpeechSynthesisResult {
+  speak: (options: SpeechSynthesisOptions) => void;
+  speaking: boolean;
+  supported: boolean;
+  voices: SpeechSynthesisVoice[];
+  cancel: () => void;
+  pause: () => void;
+  resume: () => void;
+}
+
+export function useSpeechSynthesis(): UseSpeechSynthesisResult;
+
