@@ -11,7 +11,7 @@ export interface NutritionFacts {
 }
 
 export interface Salad {
-  id: number;
+  id: string | number;
   name: string;
   description: string;
   price: number;
@@ -19,8 +19,18 @@ export interface Salad {
   calories: number;
   category: string;
   tags: string[];
-  ingredients: string[];
-  nutritionFacts: NutritionFacts;
+  ingredients: (string | SaladIngredient)[];
+  nutritionFacts: {
+    protein: number;
+    carbs: number;
+    fats: number;
+  };
+  prepTime?: number;
+}
+
+export interface SaladIngredient {
+  id: string;
+  quantity: number;
 }
 
 export interface Ingredient {
@@ -85,5 +95,7 @@ export interface UseSpeechSynthesisResult {
   resume: () => void;
 }
 
-export function useSpeechSynthesis(): UseSpeechSynthesisResult;
+export interface useSpeechSynthesis {
+  (): UseSpeechSynthesisResult;
+}
 

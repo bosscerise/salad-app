@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { XMarkIcon, Bars3Icon } from '@heroicons/react/24/solid'
-import { ShoppingBag, User, LogIn, LogOut, Moon, Sun } from 'lucide-react'
+import { ShoppingBag, User, LogIn, LogOut, Moon, Sun, ShoppingCart } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
+import { useCart } from '../contexts/CartContext'
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -32,6 +33,7 @@ export default function Header({
   // Get auth context
   const { isAuthenticated, user, logout } = useAuth()
   const { isDarkMode, toggleTheme } = useTheme()
+  const { itemCount } = useCart() // Access cart count from context
   const userName = user?.name || 'User'
 
   // Handle scroll event
@@ -98,6 +100,17 @@ export default function Header({
           >
             {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
+          
+          {/* Add mobile cart button with count */}
+          <Link to="/cart" className="relative p-2 mr-2 transition-all duration-300 rounded-lg">
+            <ShoppingCart className={`w-5 h-5 ${isDarkMode ? 'text-gray-200' : 'text-green-800'}`} />
+            {itemCount > 0 && (
+              <span className="absolute flex items-center justify-center w-4 h-4 text-xs text-white bg-green-600 rounded-full -top-1 -right-1">
+                {itemCount}
+              </span>
+            )}
+          </Link>
+          
           <button
             onClick={() => setMobileMenuOpen(true)}
             className={`p-2 ${isDarkMode ? 'text-gray-200 hover:bg-gray-700/50' : 'text-green-800 hover:bg-red-100'} rounded-lg transition-all duration-300`}
@@ -137,28 +150,27 @@ export default function Header({
             {isDarkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700" />}
           </motion.button>
 
-          {/* Cart button */}
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`relative p-2 rounded-full ${isDarkMode 
-              ? 'bg-gradient-to-r from-gray-700/50 to-gray-600/50 hover:from-gray-600/50 hover:to-gray-500/50' 
-              : 'bg-gradient-to-r from-green-100 to-red-100 hover:from-green-200 hover:to-red-200'} transition-colors`}
-          >
-            <ShoppingBag className={`w-5 h-5 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`} />
-            <AnimatePresence>
-              {cartItems > 0 && (
-                <motion.span 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  className={`absolute -top-1 -right-1 w-5 h-5 text-xs font-bold flex items-center justify-center ${isDarkMode ? 'bg-red-500 text-white' : 'bg-green-600 text-white'} rounded-full`}
-                >
-                  {cartItems}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+          {/* Cart button with count badge */}
+          <Link to="/cart" className="relative group">
+            <motion.div 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className={`p-2 rounded-full ${isDarkMode 
+                ? 'bg-gradient-to-r from-gray-700/50 to-gray-600/50 hover:from-gray-600/50 hover:to-gray-500/50' 
+                : 'bg-gradient-to-r from-green-100 to-red-100 hover:from-green-200 hover:to-red-200'}`}
+            >
+              <ShoppingCart className={`w-5 h-5 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`} />
+            </motion.div>
+            {itemCount > 0 && (
+              <motion.span 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-green-600 rounded-full -top-1 -right-1 group-hover:bg-green-700"
+              >
+                {itemCount > 99 ? '99+' : itemCount}
+              </motion.span>
+            )}
+          </Link>
 
           {/* User menu */}
           {isAuthenticated ? (
@@ -275,15 +287,15 @@ export default function Header({
             </div>
           )}
           
-          {/* Cart info in mobile menu */}
+          {/* Cart info in mobile menu - update to use itemCount */}
           <div className={`mt-4 flex items-center justify-between py-3 px-4 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-lg`}>
             <div className="flex items-center space-x-2">
               <ShoppingBag className={`w-5 h-5 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`} />
               <span className={`${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                {cartItems > 0 ? `${cartItems} item${cartItems > 1 ? 's' : ''}` : 'Cart empty'}
+                {itemCount > 0 ? `${itemCount} item${itemCount > 1 ? 's' : ''}` : 'Cart empty'}
               </span>
             </div>
-            {cartItems > 0 && (
+            {itemCount > 0 && (
               <Link 
                 to="/cart" 
                 className={`text-xs py-1 px-3 ${isDarkMode ? 'bg-red-500 text-white' : 'bg-green-600 text-white'} rounded-full font-medium`}

@@ -12,10 +12,14 @@ import "./App.css";
 
 // Lazy load components
 const Homepage = lazy(() => import("./pages/HomePage/HomePage"));
-const Menu = lazy(() => import("./pages/Menu/BuildSaladPage"));
+const Menu = lazy(() => import("./pages/Menu/Menu"));
 const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
 const RewardsPage = lazy(() => import("./pages/RewardsPage/RewardsPage"));
-
+const OrdersPage = lazy(() => import("./pages/Orders/OrdersPage"));
+const CartPage = lazy(() => import("./pages/Cart/CartPage"));
+const SavedSaladPage = lazy(() => import("./pages/SavedSalad/SavedSaladPage"));
+const SaladDetailPage = lazy(() => import("./pages/SaladDetail/SaladDetail"));
+import AdminDashboard from './pages/Admin/Dashboard';
 
 // Error boundary state and component
 interface ErrorBoundaryState {
@@ -101,6 +105,13 @@ function AppContent() {
                   <Route path="/menu" element={<Menu />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/rewards" element={<RewardsPage />} />
+                  <Route path="/orders" element={<OrdersPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/salads/:id" element={<SaladDetailPage />} />
+                  <Route path="/salad/:id" element={<SavedSaladPage />} />
+                  <Route path="/salad/saved-salads" element={<SavedSaladPage />} />
+                  <Route path="/edit-salad/:id" element={<SavedSaladPage />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>

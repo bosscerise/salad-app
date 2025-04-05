@@ -1,15 +1,24 @@
 "use client";
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Plus, Minus } from 'lucide-react';
-import React from 'react';
+import { Plus, Minus, CircleCheck, ChevronLeft, ChevronRight, Loader, X } from 'lucide-react';
+import { useIngredients } from '../../../hooks/useIngredients';
+import { useCategories } from '../../../hooks/useCategories';
+import { useToast } from '../../../hooks/useToast'; // Assuming you have a toast notification system
+// import { useNavigate } from 'react-router-dom'; // Assuming you use react-router-dom
+import pb from '../../../pb/pocketbase';
+import { userSaladApi } from '../../../services/api'; // Assuming you have an API for user salads
+import { useCart } from '../../../contexts/CartContext';
 
+// Switch component definition
 interface SwitchProps {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   className?: string;
   disabled?: boolean;
 }
+
+
 
 const Switch: React.FC<SwitchProps> = ({
   checked = false,
@@ -43,25 +52,61 @@ const Switch: React.FC<SwitchProps> = ({
     </button>
   );
 };
-import { ingredients, ingredientCategories, suggestedCombinations } from '../data';
-import type { SuggestedCombination } from '../types';
 
 type Step = 'base' | 'protein' | 'toppings' | 'dressing' | 'extras';
+type UserSalad = {
+  id: string;
+  name: string;
+  ingredients: Record<string, number>;
+  total_price: number;
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fats: number;
+  is_favorite: boolean;
+};
 
 export default function SaladBuilder() {
+  // Get data from hooks instead of static imports
+  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
   const [activeStep, setActiveStep] = useState<Step>('base');
+  const { ingredients: currentCategoryIngredients, loading: ingredientsLoading, error: ingredientsError } = useIngredients(activeStep);
+  const { ingredients: allIngredients, loading: allIngredientsLoading } = useIngredients();
+
   const [selectedIngredients, setSelectedIngredients] = useState<Record<string, number>>({});
   const [quantity, setQuantity] = useState(1);
-  const [activeSuggestion, setActiveSuggestion] = useState<string | null>(null);
   const [showAnimation, setShowAnimation] = useState(false);
-  const [showDetails, setShowDetails] = useState(false); // New state for toggle
+  const [showDetails, setShowDetails] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast(); // If you have a toast system
+  // const navigate = useNavigate(); // For navigation
 
-  const steps: Step[] = ['base', 'protein', 'toppings', 'dressing', 'extras'];
+  const [saladName, setSaladName] = useState('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedSalads, setSavedSalads] = useState<UserSalad[]>([]);
+  const { addToCart } = useCart();
 
+  const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const [showOrderSummary, setShowOrderSummary] = useState(false);
+
+  useEffect(() => {
+    if (pb.authStore.isValid) {
+      userSaladApi.getAll().then(setSavedSalads).catch(console.error);
+    }
+  }, []);
+
+  const steps = useMemo(() => {
+    return categories.map(cat => cat.id);
+  }, [categories]);
+
+  const currentStepIndex = steps.indexOf(activeStep);
+
+  // Calculate totals from selected ingredients
   const totals = useMemo(() => {
-    return Object.entries(selectedIngredients).reduce(
+    const result = Object.entries(selectedIngredients).reduce(
       (acc, [id, count]) => {
-        const ingredient = ingredients.find(i => i.id === id);
+        const ingredient = allIngredients.find(i => i.id === id);
         if (ingredient && count > 0) {
           acc.price += ingredient.price * count;
           acc.calories += ingredient.calories * count;
@@ -73,46 +118,190 @@ export default function SaladBuilder() {
       },
       { price: 0, calories: 0, protein: 0, carbs: 0, fats: 0 }
     );
-  }, [selectedIngredients]);
-
-  const currentIngredients = useMemo(() => {
-    return ingredients.filter(i => i.category === activeStep);
-  }, [activeStep]);
-
-  const applySuggestion = (suggestion: SuggestedCombination) => {
-    setShowAnimation(true);
-    const newSelections: Record<string, number> = {};
-    ['base', 'protein', 'toppings', 'dressing', 'extras'].forEach(category => {
-      const items = suggestion[category as keyof SuggestedCombination];
-      if (Array.isArray(items)) {
-        items.forEach((id: string) => {
-          newSelections[id] = 1;
-        });
-      }
-    });
-    setSelectedIngredients(newSelections);
-    setActiveSuggestion(suggestion.id);
-    setTimeout(() => setShowAnimation(false), 1200);
-  };
+    
+    // Round the values for display
+    return {
+      price: Number(result.price.toFixed(2)),
+      calories: Math.round(result.calories),
+      protein: Math.round(result.protein),
+      carbs: Math.round(result.carbs),
+      fats: Math.round(result.fats)
+    };
+  }, [selectedIngredients, allIngredients]);
 
   const handleAddIngredient = (id: string) => {
     setSelectedIngredients(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-    if (activeSuggestion) setActiveSuggestion(null);
+    setLastAdded(id);
+    setTimeout(() => setLastAdded(null), 500);
   };
 
   const handleRemoveIngredient = (id: string) => {
-    setSelectedIngredients(prev => {
+      setSelectedIngredients(prev => {
       const count = (prev[id] || 0) - 1;
       if (count <= 0) {
-        // Create a new object without the specified id property
-        const newObj = { ...prev };
-        delete newObj[id];
-        return newObj;
+        // Use object rest destructuring to omit the key without creating a variable
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [id]: _, ...rest } = prev;
+        return rest;
       }
       return { ...prev, [id]: count };
     });
-    if (activeSuggestion) setActiveSuggestion(null);
   };
+
+  const goToNextStep = () => {
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < steps.length) {
+      setActiveStep(steps[nextIndex] as Step);
+      setShowAnimation(true);
+      setTimeout(() => setShowAnimation(false), 800);
+    }
+  };
+
+  const goToPreviousStep = () => {
+    const prevIndex = currentStepIndex - 1;
+    if (prevIndex >= 0) {
+      setActiveStep(steps[prevIndex] as Step);
+    }
+  };
+
+  const progressPercentage = ((currentStepIndex + 1) / steps.length) * 100;
+
+  const handleAddToCart = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Keep the ingredients in the expected Record<string, unknown> format
+      // The cart context expects customizations as a key-value object, not an array
+      const customizationsObject: Record<string, unknown> = {};
+      
+      // Convert the selected ingredients into the required format
+      Object.entries(selectedIngredients).forEach(([id, quantity]) => {
+        customizationsObject[id] = { quantity };
+      });
+      
+      if (pb.authStore.isValid) {
+        // Create a saved salad first
+        const saladData = {
+          user_id: pb.authStore.record?.id || '', // Use record instead of model (deprecated)
+          name: saladName || `Salad ${new Date().toLocaleTimeString()}`,
+          ingredients: selectedIngredients, // Keep the object format for storage
+          total_price: totals.price,
+          total_calories: totals.calories,
+          total_protein: totals.protein,
+          total_carbs: totals.carbs,
+          total_fats: totals.fats,
+          is_favorite: false
+        };
+        
+        const savedSalad = await userSaladApi.create(saladData);
+        
+        // Add to cart as a saved salad with full ingredient info
+        await addToCart({
+          id: savedSalad.id,
+          type: 'saved-salad',
+          quantity,
+          name: savedSalad.name,
+          price: savedSalad.total_price,
+          customizations: customizationsObject
+        });
+      } else {
+        // For non-authenticated users, add a custom salad
+        await addToCart({
+          id: `custom_salad_${Date.now()}`,
+          type: 'premade',
+          quantity,
+          name: `Custom Salad`,
+          price: totals.price,
+          customizations: customizationsObject
+        });
+      }
+      
+      // Clear selections after adding to cart
+      setSelectedIngredients({});
+      setQuantity(1);
+      toast?.success('Added to cart!');
+      
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast?.error('Failed to add to cart. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveSalad = async () => {
+    if (!pb.authStore.isValid) {
+      toast?.info('Please log in to save your salad');
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      
+      // Auto-generate name if user didn't provide one
+      const name = saladName.trim() || `Salad ${savedSalads.length + 1}`;
+      
+      const saladData = {
+        user_id: pb.authStore.record?.id || '', // Use record instead of model (deprecated)
+        name,
+        ingredients: selectedIngredients,
+        total_price: totals.price,
+        total_calories: totals.calories,
+        total_protein: totals.protein,
+        total_carbs: totals.carbs,
+        total_fats: totals.fats,
+        is_favorite: false
+      };
+      
+      const savedSalad = await userSaladApi.create(saladData);
+      
+      // Update local state
+      setSavedSalads(prev => [savedSalad, ...prev]);
+      
+      // Reset form
+      setSaladName('');
+      setShowSaveDialog(false);
+      
+      toast?.success('Salad saved successfully!');
+    } catch (error) {
+      console.error('Error saving salad:', error);
+      toast?.error('Failed to save your salad');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Loading state
+  if (categoriesLoading || ingredientsLoading || allIngredientsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center">
+          <Loader className="w-8 h-8 text-green-600 animate-spin" />
+          <p className="mt-4 text-gray-600">Loading ingredients...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (categoriesError || ingredientsError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="max-w-md p-6 text-center rounded-lg bg-red-50">
+          <h2 className="text-xl font-bold text-red-700">Something went wrong</h2>
+          <p className="mt-2 text-red-600">
+            {categoriesError?.message || ingredientsError?.message}
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 mt-4 text-white bg-red-600 rounded-lg hover:bg-red-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
@@ -145,31 +334,51 @@ export default function SaladBuilder() {
           </p>
         </div>
 
-        {/* Progress Steps, Toggle Switch, and Suggested Combinations */}
+        {/* Enhanced Progress Steps Indicator */}
         <div className="mb-8 sm:mb-12">
-          <div className="flex justify-center pb-2 overflow-x-auto">
-            {steps.map((step, index) => (
-              <div key={step} className="flex items-center">
-                <button
-                  onClick={() => setActiveStep(step)}
-                  className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm sm:text-base md:text-lg transition-all ${
-                    activeStep === step
-                      ? 'bg-green-600 text-white scale-110'
-                      : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {ingredientCategories.find(c => c.id === step)?.icon}
-                </button>
-                {index < steps.length - 1 && (
-                  <div className="w-4 h-1 mx-1 bg-gray-200 sm:w-8 md:w-16 sm:mx-2 dark:bg-gray-700" />
-                )}
-              </div>
-            ))}
-          </div>
+          <div className="relative w-full max-w-md mx-auto mb-6">
+            {/* Step labels */}
+            <div className="flex justify-between mb-2">
+              {steps.map((step, index) => (
+                <div key={step} className="flex flex-col items-center">
+                  <button
+                    onClick={() => setActiveStep(step as Step)}
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base transition-all ${
+                      index <= currentStepIndex
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500'
+                    }`}
+                  >
+                    {index < currentStepIndex ? (
+                      <CircleCheck size={16} />
+                    ) : (
+                      categories.find(c => c.id === step)?.icon
+                    )}
+                  </button>
+                  <span className="mt-1 text-xs text-gray-600 sm:text-sm dark:text-gray-300">
+                    {categories.find(c => c.id === step)?.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            {/* Progress bar */}
+            <div className="h-2 bg-gray-200 rounded-full dark:bg-gray-700">
+              <motion.div
+                className="h-full bg-green-600 rounded-full"
+                initial={{ width: '0%' }}
+                animate={{ width: `${progressPercentage}%` }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 20
+                }}
+              />
+            </div>
 
-          {/* Toggle Switch and Suggested Combinations */}
-          <div className="flex flex-col items-center mt-4 space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
-            <div className="flex items-center">
+          {/* Toggle Switch */}
+          <div className="flex justify-center mb-4">
+            <div className="flex items-center px-4 py-2 bg-white rounded-full shadow-sm dark:bg-gray-800">
               <span className="mr-2 text-sm text-gray-600 dark:text-gray-300">Show Details</span>
               <Switch
                 checked={showDetails}
@@ -177,31 +386,6 @@ export default function SaladBuilder() {
                 className="scale-75 sm:scale-100"
               />
             </div>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="w-full sm:w-auto"
-            >
-              <h3 className="flex items-center justify-center gap-2 mb-3 text-lg font-bold sm:text-xl dark:text-white">
-                <Sparkles className="text-amber-500" size={18} /> Chef's Recommendations
-              </h3>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-                {suggestedCombinations.map(combo => (
-                  <motion.div
-                    key={combo.id}
-                    whileHover={{ scale: 1.02 }}
-                    className={`p-2 sm:p-3 rounded-lg cursor-pointer transition-all text-center ${
-                      activeSuggestion === combo.id
-                        ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500'
-                        : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                    onClick={() => applySuggestion(combo)}
-                  >
-                    <div className="text-xs font-medium sm:text-sm dark:text-white">{combo.name}</div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
           </div>
         </div>
 
@@ -216,13 +400,18 @@ export default function SaladBuilder() {
               className="p-4 bg-white shadow-lg sm:p-6 dark:bg-gray-800 rounded-3xl"
             >
               <h2 className="mb-4 text-2xl font-bold sm:mb-6 sm:text-3xl dark:text-white">
-                {ingredientCategories.find(c => c.id === activeStep)?.name}
+                {categories.find(c => c.id === activeStep)?.name}
               </h2>
               <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {currentIngredients.map(ingredient => (
+                {currentCategoryIngredients.map(ingredient => (
                   <motion.div
                     key={ingredient.id}
                     whileHover={{ scale: 1.03 }}
+                    animate={lastAdded === ingredient.id ? 
+                      { scale: [1, 1.1, 1], borderColor: ['#10B981', '#10B981', '#D1D5DB'] } : 
+                      {}
+                    }
+                    transition={{ duration: 0.4 }}
                     className={`p-3 sm:p-4 rounded-xl border-2 flex flex-col items-center cursor-pointer transition-all ${
                       selectedIngredients[ingredient.id]
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/30'
@@ -251,6 +440,26 @@ export default function SaladBuilder() {
                   </motion.div>
                 ))}
               </div>
+              
+              {/* Navigation buttons */}
+              <div className="flex justify-between mt-8">
+                <button
+                  onClick={goToPreviousStep}
+                  disabled={currentStepIndex === 0}
+                  className="flex items-center px-4 py-2 text-sm font-medium bg-white border rounded-full sm:px-6 sm:py-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </button>
+                <button
+                  onClick={goToNextStep}
+                  disabled={currentStepIndex === steps.length - 1}
+                  className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-green-600 rounded-full sm:px-6 sm:py-3 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </button>
+              </div>
             </motion.div>
           </div>
 
@@ -261,7 +470,9 @@ export default function SaladBuilder() {
               {Object.entries(selectedIngredients).length > 0 ? (
                 <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4 max-h-[50vh] md:max-h-[40vh] overflow-y-auto pr-1">
                   {Object.entries(selectedIngredients).map(([id, count]) => {
-                    const ingredient = ingredients.find(i => i.id === id)!;
+                    const ingredient = allIngredients.find(i => i.id === id);
+                    if (!ingredient) return null;
+                    
                     return (
                       <div key={id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2 sm:gap-3">
@@ -269,7 +480,7 @@ export default function SaladBuilder() {
                           <div>
                             <div className="text-sm font-medium sm:text-base dark:text-white">{ingredient.name}</div>
                             <div className="text-xs text-gray-600 sm:text-sm dark:text-gray-300">
-                              {ingredient.category}
+                              {categories.find(c => c.id === ingredient.category)?.name || ingredient.category}
                             </div>
                           </div>
                         </div>
@@ -310,17 +521,17 @@ export default function SaladBuilder() {
                   <div>
                     <div className="text-xs text-gray-600 sm:text-sm dark:text-gray-300">Calories</div>
                     <div className="text-lg font-bold sm:text-xl dark:text-white">
-                      {totals.calories.toFixed(0)}
+                      {totals.calories}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-600 sm:text-sm dark:text-gray-300">Protein</div>
                     <div className="text-lg font-bold sm:text-xl dark:text-white">
-                      {totals.protein.toFixed(0)}g
+                      {totals.protein}g
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-600 sm:text-sm dark:text-sm dark:text-gray-300">Price</div>
+                    <div className="text-xs text-gray-600 sm:text-sm dark:text-gray-300">Price</div>
                     <div className="text-lg font-bold sm:text-xl dark:text-white">
                       ${totals.price.toFixed(2)}
                     </div>
@@ -348,25 +559,173 @@ export default function SaladBuilder() {
                     </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowAnimation(true);
-                    setTimeout(() => {
-                      alert('Added to cart!');
-                      setShowAnimation(false);
-                    }, 500);
-                  }}
-                  disabled={!Object.keys(selectedIngredients).length}
-                  className="relative w-full py-2 overflow-hidden text-sm font-medium text-white transition-all bg-green-600 sm:py-3 sm:text-base rounded-xl hover:bg-green-700 disabled:opacity-50 group"
-                >
-                  <span className="relative z-10">Add to Cart - ${(totals.price * quantity).toFixed(2)}</span>
-                  <span className="absolute inset-0 w-0 transition-all duration-300 bg-green-700 group-hover:w-full"></span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowSaveDialog(true)}
+                    disabled={!Object.keys(selectedIngredients).length}
+                    className="px-4 py-2 text-green-600 border border-green-600 rounded-xl hover:bg-green-50 disabled:opacity-50"
+                  >
+                    Save Salad
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (Object.keys(selectedIngredients).length > 0) {
+                        setShowOrderSummary(true);
+                      } else {
+                        toast?.info('Please select ingredients first');
+                      }
+                    }}
+                    className="relative flex-1 py-2 overflow-hidden text-sm font-medium text-white transition-all bg-green-600 sm:py-3 sm:text-base rounded-xl hover:bg-green-700 disabled:opacity-50 group"
+                  >
+                    <span className="relative z-10">
+                      Review Order - ${totals.price.toFixed(2)}
+                    </span>
+                    <span className="absolute inset-0 w-0 transition-all duration-300 bg-green-700 group-hover:w-full"></span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Save Dialog */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="relative w-full max-w-md p-6 bg-white rounded-xl dark:bg-gray-800"
+          >
+            <button 
+              onClick={() => setShowSaveDialog(false)}
+              className="absolute p-1 text-gray-400 top-4 right-4 hover:text-gray-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <h3 className="mb-4 text-xl font-bold dark:text-white">Save Your Salad</h3>
+            
+            <div className="mb-4">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                Salad Name
+              </label>
+              <input
+                type="text"
+                value={saladName}
+                onChange={e => setSaladName(e.target.value)}
+                placeholder={`Salad ${savedSalads.length + 1}`}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                If left blank, we'll auto-name it for you.
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveSalad}
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+              >
+                {isSaving ? 'Saving...' : 'Save Salad'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Order Summary Dialog */}
+      {showOrderSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="relative w-full max-w-md p-6 bg-white rounded-xl dark:bg-gray-800 max-h-[90vh] overflow-y-auto"
+          >
+            <button 
+              onClick={() => setShowOrderSummary(false)}
+              className="absolute p-1 text-gray-400 top-4 right-4 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+            
+            <h3 className="mb-4 text-xl font-bold dark:text-white">Order Summary</h3>
+            
+            <div className="mb-4 space-y-2">
+              {Object.entries(selectedIngredients).map(([id, count]) => {
+                const ingredient = allIngredients.find(i => i.id === id);
+                if (!ingredient) return null;
+                
+                return (
+                  <div key={id} className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="mr-2">{ingredient.emoji || '🥗'}</span>
+                      <span>{ingredient.name}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mr-4 text-sm text-gray-600">×{count}</span>
+                      <span>${(ingredient.price * count).toFixed(2)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="py-3 mb-4 border-t border-b">
+              <div className="flex justify-between mb-2">
+                <span>Total Calories:</span>
+                <span className="font-medium">{totals.calories}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span>Protein:</span>
+                <span className="font-medium">{totals.protein}g</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span>Carbs:</span>
+                <span className="font-medium">{totals.carbs}g</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Fats:</span>
+                <span className="font-medium">{totals.fats}g</span>
+              </div>
+            </div>
+            
+            <div className="flex justify-between mb-6 text-lg font-bold">
+              <span>Total Price:</span>
+              <span>${(totals.price * quantity).toFixed(2)}</span>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowOrderSummary(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Edit Salad
+              </button>
+              <button
+                onClick={() => {
+                  handleAddToCart();
+                  setShowOrderSummary(false);
+                }}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+              >
+                {isSubmitting ? 'Adding...' : 'Add to Cart'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }
