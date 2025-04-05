@@ -24,6 +24,8 @@ export default function SaladDetail() {
   const [relatedSalads, setRelatedSalads] = useState<Salad[]>([]);
   const [activeTab, setActiveTab] = useState<'description' | 'nutrition'>('description');
 
+  const url = "https://597d-2a09-bac5-3071-1a78-00-2a3-17.ngrok-free.app"
+
   interface SaladIngredient {
     id: string;
     name: string;
@@ -130,7 +132,7 @@ export default function SaladDetail() {
       if (image.startsWith('http')) return image;
       
       if (record && image) {
-        return `http://127.0.0.1:8090/api/files/${record.collectionId}/${record.id}/${image}`;
+        return `${url}/api/files/${record.collectionId}/${record.id}/${image}`;
       }
       
       return `/images/${image || 'default-salad.jpg'}`;

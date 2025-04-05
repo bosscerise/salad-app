@@ -4,6 +4,7 @@ import {
   Upload, RefreshCw, AlertCircle, Minus 
 } from 'lucide-react';
 import { pb } from '../../../services/api';
+const url = "https://597d-2a09-bac5-3071-1a78-00-2a3-17.ngrok-free.app"
 
 interface NutrientInfo {
   name: string;
@@ -466,7 +467,7 @@ export default function SaladsManagement() {
     });
     
     if (salad.image) {
-      setImagePreview(`http://127.0.0.1:8090/api/files/${salad.collectionId}/${salad.id}/${salad.image}`);
+      setImagePreview(`${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`);
     } else {
       setImagePreview(null);
     }
@@ -585,7 +586,7 @@ export default function SaladsManagement() {
                       <div className="flex items-center">
                         {salad.image ? (
                           <img
-                            src={`http://127.0.0.1:8090/api/files/${salad.collectionId}/${salad.id}/${salad.image}`}
+                            src={`${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`}
                             alt={salad.name}
                             className="object-cover w-10 h-10 mr-3 rounded-md"
                             onError={(e) => {

@@ -24,13 +24,13 @@ const SaladCard: React.FC<SaladCardProps> = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       whileHover={{ y: -5 }}
-      className="bg-white rounded-xl shadow-lg overflow-hidden"
+      className="overflow-hidden bg-white shadow-lg rounded-xl"
     >
       <div className="relative h-48 bg-emerald-100">
         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-emerald-600/30" />
         <button
-          onClick={() => onToggleFavorite(salad.id)}
-          className="absolute top-2 right-2 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md"
+          onClick={() => onToggleFavorite(Number(salad.id))}
+          className="absolute z-10 p-2 rounded-full shadow-md top-2 right-2 bg-white/80 backdrop-blur-sm"
         >
           <Heart className={`w-5 h-5 ${
             isFavorite
@@ -48,24 +48,24 @@ const SaladCard: React.FC<SaladCardProps> = ({
         
         <p className="mt-2 text-sm text-gray-600">{salad.description}</p>
         
-        <div className="mt-3 flex items-center text-sm text-gray-500">
-          <span className="bg-teal-100 text-teal-800 px-2 py-1 rounded-full text-xs">
+        <div className="flex items-center mt-3 text-sm text-gray-500">
+          <span className="px-2 py-1 text-xs text-teal-800 bg-teal-100 rounded-full">
             {salad.calories} cal
           </span>
-          <div className="mx-2 h-4 w-px bg-gray-300"></div>
+          <div className="w-px h-4 mx-2 bg-gray-300"></div>
           <div className="flex space-x-1">
             {salad.tags.map((tag) => (
-              <span key={tag} className="bg-gray-100 px-2 py-1 rounded-full text-xs">
+              <span key={tag} className="px-2 py-1 text-xs bg-gray-100 rounded-full">
                 {tag}
               </span>
             ))}
           </div>
         </div>
         
-        <div className="mt-4 flex justify-between items-center">
+        <div className="flex items-center justify-between mt-4">
           <button
             onClick={() => setShowNutrition(!showNutrition)}
-            className="text-xs text-teal-600 hover:text-teal-800 flex items-center"
+            className="flex items-center text-xs text-teal-600 hover:text-teal-800"
           >
             {showNutrition ? 'Hide details' : 'Show details'}
             <ChevronRight className={`w-4 h-4 ml-1 transition-transform ${
@@ -77,7 +77,7 @@ const SaladCard: React.FC<SaladCardProps> = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onAddToCart}
-            className="px-3 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg"
+            className="px-3 py-2 text-sm font-medium text-white rounded-lg shadow-md bg-gradient-to-r from-teal-500 to-emerald-500 hover:shadow-lg"
           >
             Add to Cart
           </motion.button>
@@ -89,28 +89,31 @@ const SaladCard: React.FC<SaladCardProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-4 pt-4 border-t border-gray-200 overflow-hidden"
+              className="pt-4 mt-4 overflow-hidden border-t border-gray-200"
             >
               <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-gray-50 p-2 rounded-lg text-center">
+                <div className="p-2 text-center rounded-lg bg-gray-50">
                   <div className="text-xs text-gray-500">Protein</div>
                   <div className="font-bold text-gray-700">{salad.nutritionFacts.protein}g</div>
                 </div>
-                <div className="bg-gray-50 p-2 rounded-lg text-center">
+                <div className="p-2 text-center rounded-lg bg-gray-50">
                   <div className="text-xs text-gray-500">Carbs</div>
                   <div className="font-bold text-gray-700">{salad.nutritionFacts.carbs}g</div>
                 </div>
-                <div className="bg-gray-50 p-2 rounded-lg text-center">
+                <div className="p-2 text-center rounded-lg bg-gray-50">
                   <div className="text-xs text-gray-500">Fats</div>
                   <div className="font-bold text-gray-700">{salad.nutritionFacts.fats}g</div>
                 </div>
               </div>
               
-              <h4 className="text-xs font-medium text-gray-700 mb-2">Ingredients:</h4>
+              <h4 className="mb-2 text-xs font-medium text-gray-700">Ingredients:</h4>
               <div className="flex flex-wrap gap-1">
                 {salad.ingredients.map((ingredient) => (
-                  <span key={ingredient} className="bg-teal-50 text-teal-700 px-2 py-1 rounded-full text-xs">
-                    {ingredient}
+                  <span 
+                    key={typeof ingredient === 'string' ? ingredient : ingredient.id} 
+                    className="px-2 py-1 text-xs text-teal-700 rounded-full bg-teal-50"
+                  >
+                    {typeof ingredient === 'string' ? ingredient : ingredient.id}
                   </span>
                 ))}
               </div>

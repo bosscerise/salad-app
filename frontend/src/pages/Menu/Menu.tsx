@@ -14,6 +14,7 @@ import SaladGrid from './components/SaladGrid';
 import LoadingSpinner from './components/LoadingSpinner';
 
 
+const url = "https://597d-2a09-bac5-3071-1a78-00-2a3-17.ngrok-free.app"
 
 // Main component
 export default function MenuPage() {
@@ -95,7 +96,7 @@ export default function MenuPage() {
           description: item.description || 'No description available',
           price: item.price || 0,
           image: item.image
-            ? `http://127.0.0.1:8090/api/files/${item.collectionId}/${item.id}/${item.image}`
+            ? `${url}/api/files/${item.collectionId}/${item.id}/${item.image}`
             : '/images/default-salad.jpg',
           calories: item.calories || 0,
           category: item.category || 'featured',
