@@ -653,7 +653,7 @@ export default function SaladDetail() {
                   onClick={() => {
                     if (isCustomizing && isCustomized) {
                       addToCart({
-                        id: salad.id,
+                        id: String(salad.id),
                         name: `Custom ${salad.name}`,
                         price: customPrice,
                         quantity: quantity,

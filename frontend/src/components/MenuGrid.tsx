@@ -25,7 +25,7 @@ const MenuGrid: React.FC<MenuGridProps> = ({ salads }) => {
   const [showConfetti, setShowConfetti] = useState(false)
 
   const handleAddToCart = (salad: Salad) => {
-    addToCart({ id: salad.id, name: salad.name, price: salad.price, quantity: 1 })
+    addToCart({ id: salad.id.toString(), name: salad.name, price: salad.price, quantity: 1, type: 'premade' })
     setShowConfetti(true)
     setTimeout(() => setShowConfetti(false), 3000)
   }

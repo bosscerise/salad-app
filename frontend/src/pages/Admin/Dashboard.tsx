@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sliders, PlusCircle, MenuSquare, Grid, Utensils, ArrowLeft, LogOut, Users, Mail } from 'lucide-react';
+import { MenuSquare, Grid, Utensils, ArrowLeft, LogOut, Users, Mail } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { pb } from '../../services/api';
+// import { pb } from '../../services/api';
 
 // Admin Panel components
 import SaladsManagement from './components/SaladsManagement';
@@ -12,7 +12,7 @@ type ActiveView = 'salads' | 'ingredients' | 'categories' | 'orders' | 'users';
 
 export default function AdminDashboard() {
   const [activeView, setActiveView] = useState<ActiveView>('salads');
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   // Check if user is authenticated and has admin role
@@ -22,8 +22,8 @@ export default function AdminDashboard() {
     return null;
   }
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handlelogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
               Back to Site
             </button>
             <button
-              onClick={handleSignOut}
+              onClick={handlelogout}
               className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 rounded-lg hover:bg-red-50"
             >
               <LogOut size={18} className="mr-3" />

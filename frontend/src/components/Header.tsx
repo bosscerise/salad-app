@@ -24,7 +24,6 @@ interface HeaderProps {
 
 export default function Header({ 
   scrolled = false,
-  cartItems = 0
   }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)

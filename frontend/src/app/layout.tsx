@@ -1,7 +1,7 @@
 // Or wherever your main layout component is located
 import { useToast } from '../hooks/useToast';
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const { ToastContainer } = useToast();
   
   return (

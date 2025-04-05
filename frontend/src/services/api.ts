@@ -100,7 +100,8 @@ export const categoryApi = {
         return await pb.collection('ingredient_category').getFullList<IngredientCategory>({
           sort: 'order',
         });
-      } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_) {
         // If the singular form doesn't work, try plural
         return await pb.collection('ingredient_categories').getFullList<IngredientCategory>({
           sort: 'order',
@@ -124,7 +125,8 @@ export const categoryApi = {
     try {
       try {
         return await pb.collection('ingredient_category').getOne<IngredientCategory>(id);
-      } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_) {
         return await pb.collection('ingredient_categories').getOne<IngredientCategory>(id);
       }
     } catch (error) {
@@ -140,7 +142,7 @@ export const orderApi = {
   create: async (orderData: Omit<Order, 'id' | 'created' | 'updated'>): Promise<Order> => {
     try {
       // Format items properly for storage
-      const formattedData = {
+      const formattedData: Record<string, string | number | boolean | Record<string, number>> = {
         ...orderData,
         items: typeof orderData.items === 'object' 
           ? JSON.stringify(orderData.items) 
@@ -189,7 +191,7 @@ export const orderApi = {
     }
   },
   
-  subscribeToUpdates: (callback: (data: any) => void): () => void => {
+  subscribeToUpdates: (callback: (data: { action: string; record: Order }) => void) => {
     if (!pb.authStore.isValid) {
       console.warn('Cannot subscribe to orders: User not authenticated');
       return () => {}; // Return no-op unsubscribe function
@@ -201,7 +203,18 @@ export const orderApi = {
     // Subscribe to orders for this user
     try {
       // Add filter for the current user's orders
-      return pb.collection('orders').subscribe(`user_id="${userId}"`, callback);
+      const subscriptionPromise = pb.collection('orders').subscribe(`user_id="${userId}"`, callback);
+      
+      // Return a function that will unsubscribe when called
+      return () => {
+        subscriptionPromise.then(unsubscribe => {
+          if (typeof unsubscribe === 'function') {
+            unsubscribe();
+          }
+        }).catch(error => {
+          console.error('Error in unsubscribe:', error);
+        });
+      };
     } catch (error) {
       console.error('Error subscribing to order updates:', error);
       return () => {}; // Return no-op unsubscribe function

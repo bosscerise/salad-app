@@ -355,7 +355,7 @@ export default function CartPage() {
                                       return (
                                         <div key={idx} className="flex justify-between text-sm">
                                           <span>{ingredient?.name || id}</span>
-                                          <span className="text-gray-600">×{qty}</span>
+                                          <span className="text-gray-600">×{typeof qty === 'number' ? qty : String(qty)}</span>
                                         </div>
                                       );
                                     })
