@@ -127,12 +127,27 @@ export default function SaladDetail() {
     id: string;
   }
 
-  const getImageURL = (record: PocketBaseRecord, image: string): string => {
+  const getImageURL = async (record: PocketBaseRecord, image: string): Promise<string> => {
     try {
       if (image.startsWith('http')) return image;
       
       if (record && image) {
-        return `${url}/api/files/${record.collectionId}/${record.id}/${image}`;
+        const imageUrl = `${url}/api/files/${record.collectionId}/${record.id}/${image}`;
+        try {
+          const response = await fetch(imageUrl, {
+            headers: {
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
+          
+          if (!response.ok) throw new Error('Failed to fetch image');
+          
+          const blob = await response.blob();
+          return URL.createObjectURL(blob);
+        } catch (error) {
+          console.error('Error fetching image:', error);
+          return '/images/default-salad.jpg';
+        }
       }
       
       return `/images/${image || 'default-salad.jpg'}`;
@@ -164,12 +179,16 @@ export default function SaladDetail() {
           ingredientsArray = [record.ingredients?.toString() || 'Mixed Ingredients'];
         }
         
+        const imageUrl = record.image 
+          ? await getImageURL(record, record.image)
+          : '/images/default-salad.jpg';
+          
         saladData = {
           id: record.id,
           name: record.name || 'Unnamed Salad',
           description: record.description || 'No description available',
           price: record.price || 0,
-          image: record.image ? getImageURL(record, record.image) : '/images/default-salad.jpg',
+          image: imageUrl,
           calories: record.calories || 0,
           category: record.category || 'featured',
           tags: Array.isArray(record.tags) ? record.tags : (record.tags ? [record.tags.toString()] : []),
@@ -194,7 +213,7 @@ export default function SaladDetail() {
             sort: '-created'
           });
           
-          relatedItems = relatedRecords.items.map(item => {
+          const processedRelatedItems = await Promise.all(relatedRecords.items.map(async (item) => {
             let ingredientsArr: string[] = [];
             if (typeof item.ingredients === 'string') {
               ingredientsArr = item.ingredients.split(',').map(i => i.trim());
@@ -204,12 +223,16 @@ export default function SaladDetail() {
               ingredientsArr = [item.ingredients?.toString() || 'Mixed Ingredients'];
             }
             
+            const relatedImageUrl = item.image 
+              ? await getImageURL(item, item.image)
+              : '/images/default-salad.jpg';
+              
             return {
               id: item.id,
               name: item.name || 'Unnamed Salad',
               description: item.description || 'No description available',
               price: item.price || 0,
-              image: item.image ? getImageURL(item, item.image) : '/images/default-salad.jpg',
+              image: relatedImageUrl,
               calories: item.calories || 0,
               category: item.category || 'featured',
               tags: Array.isArray(item.tags) ? item.tags : 
@@ -221,49 +244,10 @@ export default function SaladDetail() {
                 fats: item.fats || 0
               }
             };
-          });
+          }));
           
-          if (relatedItems.length < 4) {
-            try {
-              const additionalRecords = await pb.collection('salads').getList(1, 4 - relatedItems.length, {
-                filter: `id != "${saladData?.id}" && category != "${saladData?.category}" && available = true`,
-                sort: 'display_order'
-              });
-              
-              const additionalItems = additionalRecords.items.map(item => {
-                let ingredientsArr: string[] = [];
-                if (typeof item.ingredients === 'string') {
-                  ingredientsArr = item.ingredients.split(',').map(i => i.trim());
-                } else if (Array.isArray(item.ingredients)) {
-                  ingredientsArr = item.ingredients;
-                } else {
-                  ingredientsArr = [item.ingredients?.toString() || 'Mixed Ingredients'];
-                }
-                
-                return {
-                  id: item.id,
-                  name: item.name || 'Unnamed Salad',
-                  description: item.description || 'No description available',
-                  price: item.price || 0,
-                  image: item.image ? getImageURL(item, item.image) : '/images/default-salad.jpg',
-                  calories: item.calories || 0,
-                  category: item.category || 'featured',
-                  tags: Array.isArray(item.tags) ? item.tags : 
-                       (item.tags ? [item.tags.toString()] : []),
-                  ingredients: ingredientsArr,
-                  nutritionFacts: {
-                    protein: item.protein || 0,
-                    carbs: item.carbs || 0,
-                    fats: item.fats || 0
-                  }
-                };
-              });
-              
-              relatedItems = [...relatedItems, ...additionalItems];
-            } catch (additionalError) {
-              console.log('Error fetching additional salads:', additionalError);
-            }
-          }
+          relatedItems = processedRelatedItems;
+          
         } catch (relatedError) {
           console.log('Error fetching related salads from PocketBase:', relatedError);
         }
@@ -310,13 +294,23 @@ export default function SaladDetail() {
     }
   }, [id]);
 
+  useEffect(() => {
+    return () => {
+      if (salad?.image && typeof salad.image === 'string' && salad.image.startsWith('blob:')) {
+        URL.revokeObjectURL(salad.image);
+      }
+      
+      relatedSalads.forEach(relatedSalad => {
+        if (relatedSalad.image && relatedSalad.image.startsWith('blob:')) {
+          URL.revokeObjectURL(relatedSalad.image);
+        }
+      });
+    };
+  }, [salad, relatedSalads]);
+
   const handleAddToCart = () => {
     if (salad) {
       try {
-        // const imageURL = typeof salad.image === 'string' 
-        //   ? (salad.image.startsWith('http') ? salad.image : `/images/${salad.image}`)
-        //   : '/images/default-salad.jpg';
-        
         addToCart({
           id: `premade_${salad.id}`,
           name: salad.name,

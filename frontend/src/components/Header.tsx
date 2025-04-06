@@ -12,9 +12,9 @@ import { useCart } from '../contexts/CartContext'
 const navigation = [
   { name: 'Home', href: '/' },
   { name: 'Menu', href: '/menu' },
-  { name: 'About', href: '#about' },
-  { name: 'Rewards', href: '/rewards' },
-  { name: 'Contact', href: '#contact' },
+  // { name: 'About', href: '#about' },
+  // { name: 'Rewards', href: '/rewards' },
+  // { name: 'Contact', href: '#contact' },
 ]
 
 interface HeaderProps {
@@ -84,7 +84,7 @@ export default function Header({
             <span className={`text-xl sm:text-2xl font-bold ${isDarkMode 
               ? 'bg-gradient-to-r from-red-400 to-green-400'
               : 'bg-gradient-to-r from-red-600 to-green-600'} text-transparent bg-clip-text transform transition-all duration-300 group-hover:scale-105`}>
-              Salad Shark
+              Fresh Box
             </span>
             <span className="text-xl transition-all duration-300 transform sm:text-2xl group-hover:rotate-12">🥗</span>
           </Link>
@@ -244,7 +244,7 @@ export default function Header({
         <div className={`fixed inset-y-0 right-0 w-full sm:max-w-sm ${isDarkMode ? 'bg-gray-900' : 'bg-white'} p-6 transform transition-transform duration-300 ease-in-out`} 
               style={{ transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(100%)' }}>
           <div className="flex items-center justify-between">
-            <span className={`text-2xl font-bold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Salad Shark</span>
+            <span className={`text-2xl font-bold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>Fresh Box</span>
             <div className="flex space-x-2">
               <button
                 onClick={toggleTheme}
@@ -304,6 +304,25 @@ export default function Header({
               </Link>
             )}
           </div>
+          
+          {/* Add orders link if authenticated */}
+          {isAuthenticated && (
+            <div className={`mt-4 flex items-center justify-between py-3 px-4 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-lg`}>
+              <div className="flex items-center space-x-2">
+                <ShoppingBag className={`w-5 h-5 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`} />
+                <span className={`${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                  Order History
+                </span>
+              </div>
+              <Link 
+                to="/orders" 
+                className={`text-xs py-1 px-3 ${isDarkMode ? 'bg-red-500 text-white' : 'bg-green-600 text-white'} rounded-full font-medium`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                View
+              </Link>
+            </div>
+          )}
           
           <nav className="mt-8 space-y-4">
             {navigation.map((item) => (

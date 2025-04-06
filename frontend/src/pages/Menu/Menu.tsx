@@ -13,8 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import SaladGrid from './components/SaladGrid';
 import LoadingSpinner from './components/LoadingSpinner';
 
-
-const url = "https://597d-2a09-bac5-3071-1a78-00-2a3-17.ngrok-free.app"
+const url = "https://597d-2a09-bac5-3071-1a78-00-2a3-17.ngrok-free.app";
 
 // Main component
 export default function MenuPage() {
@@ -29,13 +28,42 @@ export default function MenuPage() {
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
-  // Add this improved function to safely parse ingredients
   const fetchSaladsFromPB = async () => {
     try {
       const results = await pb.collection('salads').getList(1, 50, {
         filter: 'available = true',
         sort: 'display_order'
       });
+      
+      // Process image URLs first to avoid repetitive fetches
+      const imageUrls: Record<string, string> = {};
+      
+      // Pre-fetch all images with proper headers
+      await Promise.all(results.items.map(async (item) => {
+        if (item.image) {
+          try {
+            const imageUrl = `${url}/api/files/${item.collectionId}/${item.id}/${item.image}`;
+            const response = await fetch(imageUrl, {
+              headers: {
+                'ngrok-skip-browser-warning': 'true'
+              }
+            });
+            
+            if (response.ok) {
+              const blob = await response.blob();
+              const objectUrl = URL.createObjectURL(blob);
+              imageUrls[item.id] = objectUrl;
+            } else {
+              imageUrls[item.id] = '/images/default-salad.jpg';
+            }
+          } catch (error) {
+            console.error(`Error fetching image for ${item.name}:`, error);
+            imageUrls[item.id] = '/images/default-salad.jpg';
+          }
+        } else {
+          imageUrls[item.id] = '/images/default-salad.jpg';
+        }
+      }));
       
       // Robust parsing of salad data
       const pbSalads = results.items.map(item => {
@@ -95,9 +123,7 @@ export default function MenuPage() {
           name: item.name || 'Unnamed Salad',
           description: item.description || 'No description available',
           price: item.price || 0,
-          image: item.image
-            ? `${url}/api/files/${item.collectionId}/${item.id}/${item.image}`
-            : '/images/default-salad.jpg',
+          image: imageUrls[item.id] || '/images/default-salad.jpg',
           calories: item.calories || 0,
           category: item.category || 'featured',
           tags: Array.isArray(item.tags) ? item.tags : (item.tags ? [item.tags.toString()] : []),
@@ -144,6 +170,17 @@ export default function MenuPage() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      // Clean up any object URLs to prevent memory leaks
+      salads.forEach(salad => {
+        if (salad.image && salad.image.startsWith('blob:')) {
+          URL.revokeObjectURL(salad.image);
+        }
+      });
+    };
+  }, [salads]);
 
   const handleSaladClick = (salad: Salad) => {
     navigate(`/salads/${salad.id}`);

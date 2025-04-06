@@ -59,7 +59,7 @@ export default function Footer({ navigation }: FooterProps) {
     }`}>
       <div className="max-w-6xl mx-auto">
         {/* Main footer content - simplified grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Brand column */}
           <div className="md:col-span-1">
             {/* Logo */}
@@ -79,7 +79,7 @@ export default function Footer({ navigation }: FooterProps) {
               <span className={`text-lg font-bold ${
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
-                Salad Shark
+                Fresh Box
               </span>
             </div>
             
@@ -180,7 +180,7 @@ export default function Footer({ navigation }: FooterProps) {
           isDarkMode ? 'border-gray-800' : 'border-gray-200'
         } flex flex-col sm:flex-row justify-between items-center gap-3`}>
           <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-            © 2025 Salad Shark. All rights reserved.
+            © 2025 Fresh Box. All rights reserved.
           </p>
           <div className="flex flex-wrap gap-4">
             {navigation.map((item) => (

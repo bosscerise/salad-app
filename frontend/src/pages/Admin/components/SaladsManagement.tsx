@@ -80,6 +80,7 @@ export default function SaladsManagement() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [nutrients, setNutrients] = useState<{name: string, value: string}[]>([]);
   const [newNutrient, setNewNutrient] = useState({name: '', value: ''});
+  const [saladImagePreviews, setSaladImagePreviews] = useState<Record<string, string | null>>({});
   
   const fetchSalads = async () => {
     setLoading(true);
@@ -232,6 +233,44 @@ export default function SaladsManagement() {
     fetchSalads();
     fetchIngredients();
   }, []);
+
+  useEffect(() => {
+    const fetchAllImagePreviews = async () => {
+      const previews: Record<string, string | null> = {};
+      for (const salad of salads) {
+        if (salad.image) {
+          try {
+            const fileUrl = `${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`;
+            const response = await fetch(fileUrl, {
+              headers: {
+                'ngrok-skip-browser-warning': 'true'
+              }
+            });
+            if (!response.ok) throw new Error('Failed to fetch image');
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            previews[salad.id] = objectUrl;
+          } catch (error) {
+            console.error(`Error fetching image for ${salad.name}:`, error);
+            previews[salad.id] = null;
+          }
+        } else {
+          previews[salad.id] = null;
+        }
+      }
+      setSaladImagePreviews(previews);
+    };
+
+    if (salads.length > 0) {
+      fetchAllImagePreviews();
+    }
+
+    return () => {
+      Object.values(saladImagePreviews).forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [salads]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -466,11 +505,28 @@ export default function SaladsManagement() {
       display_order: salad.display_order
     });
     
-    if (salad.image) {
-      setImagePreview(`${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`);
-    } else {
-      setImagePreview(null);
-    }
+    const fetchImagePreview = async (salad: Salad) => {
+      if (salad.image) {
+        try {
+          const fileUrl = `${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`;
+          const response = await fetch(fileUrl, {
+            headers: {
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
+          if (!response.ok) throw new Error('Failed to fetch image');
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          setImagePreview(objectUrl);
+        } catch (error) {
+          console.error('Error fetching image:', error);
+          setImagePreview(null);
+        }
+      } else {
+        setImagePreview(null);
+      }
+    };
+    fetchImagePreview(salad);
 
     if (salad.additional_nutrients) {
       setNutrients(
@@ -586,12 +642,9 @@ export default function SaladsManagement() {
                       <div className="flex items-center">
                         {salad.image ? (
                           <img
-                            src={`${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`}
+                            src={saladImagePreviews[salad.id] || '/images/default-salad.jpg'}
                             alt={salad.name}
                             className="object-cover w-10 h-10 mr-3 rounded-md"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/images/default-salad.jpg';
-                            }}
                           />
                         ) : (
                           <div className="flex items-center justify-center w-10 h-10 mr-3 bg-gray-200 rounded-md">

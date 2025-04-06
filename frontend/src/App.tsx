@@ -19,7 +19,7 @@ const OrdersPage = lazy(() => import("./pages/Orders/OrdersPage"));
 const CartPage = lazy(() => import("./pages/Cart/CartPage"));
 const SavedSaladPage = lazy(() => import("./pages/SavedSalad/SavedSaladPage"));
 const SaladDetailPage = lazy(() => import("./pages/SaladDetail/SaladDetail"));
-import AdminDashboard from './pages/Admin/Dashboard';
+const AdminDashboard = lazy(() => import ("./pages/Admin/Dashboard"));
 
 // Error boundary state and component
 interface ErrorBoundaryState {
