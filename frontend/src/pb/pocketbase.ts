@@ -1,7 +1,7 @@
 import PocketBase from 'pocketbase';
 
 // Create a single PocketBase instance for the entire app
-const pb = new PocketBase('https://597d-2a09-bac5-3071-1a78-00-2a3-17.ngrok-free.app');
+const pb = new PocketBase('https://7793d9d384730dd5acb7be839c71587b.serveo.net');
 pb.autoCancellation(false);
 pb.beforeSend = (url: string, options: RequestInit) => {
   options.headers = {

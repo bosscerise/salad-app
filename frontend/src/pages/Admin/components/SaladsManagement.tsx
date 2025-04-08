@@ -4,7 +4,7 @@ import {
   Upload, RefreshCw, AlertCircle, Minus 
 } from 'lucide-react';
 import { pb } from '../../../services/api';
-const url = "https://597d-2a09-bac5-3071-1a78-00-2a3-17.ngrok-free.app"
+const url = "https://7793d9d384730dd5acb7be839c71587b.serveo.net"
 
 interface NutrientInfo {
   name: string;
@@ -241,11 +241,7 @@ export default function SaladsManagement() {
         if (salad.image) {
           try {
             const fileUrl = `${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`;
-            const response = await fetch(fileUrl, {
-              headers: {
-                'ngrok-skip-browser-warning': 'true'
-              }
-            });
+            const response = await fetch(fileUrl);
             if (!response.ok) throw new Error('Failed to fetch image');
             const blob = await response.blob();
             const objectUrl = URL.createObjectURL(blob);
@@ -509,11 +505,7 @@ export default function SaladsManagement() {
       if (salad.image) {
         try {
           const fileUrl = `${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`;
-          const response = await fetch(fileUrl, {
-            headers: {
-              'ngrok-skip-browser-warning': 'true'
-            }
-          });
+          const response = await fetch(fileUrl);
           if (!response.ok) throw new Error('Failed to fetch image');
           const blob = await response.blob();
           const objectUrl = URL.createObjectURL(blob);

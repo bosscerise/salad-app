@@ -24,7 +24,7 @@ export default function SaladDetail() {
   const [relatedSalads, setRelatedSalads] = useState<Salad[]>([]);
   const [activeTab, setActiveTab] = useState<'description' | 'nutrition'>('description');
 
-  const url = "https://597d-2a09-bac5-3071-1a78-00-2a3-17.ngrok-free.app"
+  const url = "https://7793d9d384730dd5acb7be839c71587b.serveo.net"
 
   interface SaladIngredient {
     id: string;
@@ -134,11 +134,7 @@ export default function SaladDetail() {
       if (record && image) {
         const imageUrl = `${url}/api/files/${record.collectionId}/${record.id}/${image}`;
         try {
-          const response = await fetch(imageUrl, {
-            headers: {
-              'ngrok-skip-browser-warning': 'true'
-            }
-          });
+          const response = await fetch(imageUrl)
           
           if (!response.ok) throw new Error('Failed to fetch image');
           
