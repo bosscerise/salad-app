@@ -24,8 +24,6 @@ export default function SaladDetail() {
   const [relatedSalads, setRelatedSalads] = useState<Salad[]>([]);
   const [activeTab, setActiveTab] = useState<'description' | 'nutrition'>('description');
 
-  const url = "https://7793d9d384730dd5acb7be839c71587b.serveo.net"
-
   interface SaladIngredient {
     id: string;
     name: string;
@@ -132,7 +130,7 @@ export default function SaladDetail() {
       if (image.startsWith('http')) return image;
       
       if (record && image) {
-        const imageUrl = `${url}/api/files/${record.collectionId}/${record.id}/${image}`;
+        const imageUrl = pb.files.getUrl(record, image);
         try {
           const response = await fetch(imageUrl)
           

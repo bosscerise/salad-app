@@ -4,7 +4,6 @@ import {
   Upload, RefreshCw, AlertCircle, Minus 
 } from 'lucide-react';
 import { pb } from '../../../services/api';
-const url = "https://7793d9d384730dd5acb7be839c71587b.serveo.net"
 
 interface NutrientInfo {
   name: string;
@@ -240,7 +239,7 @@ export default function SaladsManagement() {
       for (const salad of salads) {
         if (salad.image) {
           try {
-            const fileUrl = `${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`;
+            const fileUrl = pb.files.getURL(salad, salad.image);
             const response = await fetch(fileUrl);
             if (!response.ok) throw new Error('Failed to fetch image');
             const blob = await response.blob();
@@ -504,7 +503,7 @@ export default function SaladsManagement() {
     const fetchImagePreview = async (salad: Salad) => {
       if (salad.image) {
         try {
-          const fileUrl = `${url}/api/files/${salad.collectionId}/${salad.id}/${salad.image}`;
+          const fileUrl = pb.files.getURL(salad, salad.image);
           const response = await fetch(fileUrl);
           if (!response.ok) throw new Error('Failed to fetch image');
           const blob = await response.blob();

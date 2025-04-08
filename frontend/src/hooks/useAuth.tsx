@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (userData) {
           const avatarUrl = userData.avatar 
-            ? pb.files.getUrl(userData, userData.avatar, { thumb: '100x100' })
+            ? pb.files.getURL(userData, userData.avatar, { thumb: '100x100' })
             : undefined;
             
           setUser({
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: result.record.id,
           email: result.record.email,
           name: result.record.name,
-          avatar: result.record.avatar ? pb.files.getUrl(result.record, result.record.avatar, { thumb: '100x100' }) : undefined,
+          avatar: result.record.avatar ? pb.files.getURL(result.record, result.record.avatar, { thumb: '100x100' }) : undefined,
           role: result.record.role || 'customer',
           points: result.record.points || 0
         }
@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: result.id,
         email: result.email,
         name: result.name,
-        avatar: result.avatar ? pb.files.getUrl(result, result.avatar, { thumb: '100x100' }) : undefined,
+        avatar: result.avatar ? pb.files.getURL(result, result.avatar, { thumb: '100x100' }) : undefined,
         role: result.role || 'customer',
         points: result.points || 0
       };

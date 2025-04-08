@@ -9,6 +9,7 @@ interface Ingredient {
   id: string;
   name: string;
   category: string;
+  categoryId?: string; // Add categoryId to track the actual relation ID
   price: number;
   calories: number;
   protein: number;
@@ -17,6 +18,11 @@ interface Ingredient {
   available: boolean;
   image?: string;
   emoji?: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
 }
 
 export default function IngredientsManagement() {
@@ -31,7 +37,8 @@ export default function IngredientsManagement() {
   // Form state
   const [formData, setFormData] = useState<Partial<Ingredient>>({
     name: '',
-    category: 'base',
+    category: '',
+    categoryId: '',
     price: 0,
     calories: 0,
     protein: 0,
@@ -45,25 +52,75 @@ export default function IngredientsManagement() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   // Categories for dropdown
-  const categories = [
+  const [categories, setCategories] = useState<Category[]>([
     { id: 'base', name: 'Base' },
     { id: 'protein', name: 'Protein' },
     { id: 'toppings', name: 'Toppings' },
     { id: 'dressing', name: 'Dressing' },
     { id: 'extras', name: 'Extras' }
-  ];
+  ]);
   
-  // Fetch ingredients from PocketBase
+  // Add state to track if categories are loading
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  
+  // Fetch ingredient categories from PocketBase
+  const fetchCategories = async () => {
+    setCategoriesLoading(true);
+    try {
+      const records = await pb.collection('ingredient_category').getList(1, 50, {
+        sort: 'order,name'
+      });
+      
+      if (records.items.length > 0) {
+        const fetchedCategories = records.items.map(item => ({
+          id: item.id,
+          name: item.name
+        }));
+        setCategories(fetchedCategories);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      // Keep default categories if fetch fails
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+  
+  // Fetch ingredients from PocketBase with expanded category
   const fetchIngredients = async () => {
     setLoading(true);
     setError(null);
     
     try {
       const records = await pb.collection('ingredients').getList(1, 200, {
-        sort: 'category,name'
+        sort: 'category,name',
+        expand: 'category' // Expand the category relation
       });
       
-      setIngredients(records.items as unknown as Ingredient[]);
+      // Process the records to handle expanded category
+      const processedIngredients = records.items.map(item => {
+        // Extract the category name from the expanded relation
+        let categoryName = '';
+        let categoryId = '';
+        
+        if (item.expand && item.expand.category) {
+          categoryName = item.expand.category.name;
+          categoryId = item.category;
+        } else if (item.category) {
+          // If not expanded but we have the ID, find it in our categories
+          const foundCategory = categories.find(c => c.id === item.category);
+          categoryName = foundCategory ? foundCategory.name : 'Unknown';
+          categoryId = item.category;
+        }
+        
+        return {
+          ...item,
+          category: categoryName,
+          categoryId: categoryId
+        };
+      });
+      
+      setIngredients(processedIngredients as unknown as Ingredient[]);
     } catch (err) {
       console.error('Error fetching ingredients:', err);
       setError('Failed to load ingredients. Please try again.');
@@ -73,14 +130,28 @@ export default function IngredientsManagement() {
   };
   
   useEffect(() => {
-    fetchIngredients();
+    fetchCategories();
   }, []);
+  
+  useEffect(() => {
+    if (categories.length > 0) {
+      fetchIngredients();
+    }
+  }, [categories]);
   
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
-    if (type === 'number') {
+    if (name === 'category') {
+      // When category dropdown changes, store both name and ID
+      const selectedCategory = categories.find(c => c.id === value);
+      setFormData(prev => ({ 
+        ...prev, 
+        category: selectedCategory?.name || value,
+        categoryId: value
+      }));
+    } else if (type === 'number') {
       setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
     } else if (type === 'checkbox') {
       const target = e.target as HTMLInputElement;
@@ -113,6 +184,10 @@ export default function IngredientsManagement() {
       // Create a data object with all necessary fields
       const data = { 
         ...formData,
+        // Use categoryId for the relation
+        category: formData.categoryId || categories[0]?.id,
+        // Remove the categoryId from the submitted data
+        categoryId: undefined,
         // Ensure numeric fields are properly typed
         price: parseFloat(formData.price?.toString() || '0'),
         calories: parseInt(formData.calories?.toString() || '0'),
@@ -122,7 +197,6 @@ export default function IngredientsManagement() {
         // Ensure boolean fields are properly set
         available: formData.available === undefined ? true : !!formData.available,
         // Add any missing required fields
-        category: formData.category || 'base',
         name: formData.name || 'New Ingredient'
       };
       
@@ -144,7 +218,7 @@ export default function IngredientsManagement() {
         
         // Add all fields to FormData
         Object.entries(data).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
+          if (value !== undefined && value !== null && key !== 'categoryId') {
             if (key === 'available') {
               // Convert boolean to string '0' or '1' for PocketBase
               formData.append(key, value ? '1' : '0');
@@ -166,7 +240,8 @@ export default function IngredientsManagement() {
       // Reset form state
       setFormData({
         name: '',
-        category: 'base',
+        category: '',
+        categoryId: '',
         price: 0,
         calories: 0,
         protein: 0,
@@ -216,6 +291,7 @@ export default function IngredientsManagement() {
     setFormData({
       name: ingredient.name,
       category: ingredient.category,
+      categoryId: ingredient.categoryId,
       price: ingredient.price,
       calories: ingredient.calories,
       protein: ingredient.protein,
@@ -281,7 +357,8 @@ export default function IngredientsManagement() {
               setEditingIngredient(null);
               setFormData({
                 name: '',
-                category: 'base',
+                category: '',
+                categoryId: '',
                 price: 0,
                 calories: 0,
                 protein: 0,
@@ -370,7 +447,7 @@ export default function IngredientsManagement() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">
-                        {categories.find(c => c.id === ingredient.category)?.name || ingredient.category}
+                        {categories.find(c => c.id === ingredient.categoryId)?.name || ingredient.category}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">${ingredient.price.toFixed(2)}</td>
@@ -471,18 +548,26 @@ export default function IngredientsManagement() {
                 
                 <div>
                   <label className="block mb-1 text-sm font-medium text-gray-700">Category</label>
-                  <select
-                    name="category"
-                    value={formData.category || 'base'}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                  {categoriesLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <RefreshCw size={16} className="text-emerald-600 animate-spin" />
+                      <span className="text-sm text-gray-500">Loading categories...</span>
+                    </div>
+                  ) : (
+                    <select
+                      name="category"
+                      value={formData.categoryId || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500"
+                    >
+                      <option value="">Select a category</option>
+                      {categories.map(category => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 
                 <div>

@@ -13,8 +13,6 @@ import { useNavigate } from 'react-router-dom';
 import SaladGrid from './components/SaladGrid';
 import LoadingSpinner from './components/LoadingSpinner';
 
-const url = "https://7793d9d384730dd5acb7be839c71587b.serveo.net";
-
 // Main component
 export default function MenuPage() {
   // States
@@ -42,7 +40,7 @@ export default function MenuPage() {
       await Promise.all(results.items.map(async (item) => {
         if (item.image) {
           try {
-            const imageUrl = `${url}/api/files/${item.collectionId}/${item.id}/${item.image}`;
+            const imageUrl = pb.files.getUrl(item, item.image);
             const response = await fetch(imageUrl);
             
             if (response.ok) {
