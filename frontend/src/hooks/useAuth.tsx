@@ -22,6 +22,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (email: string, password: string, remember?: boolean) => Promise<AuthResponse>;
+  loginWithOAuth2: (provider: string) => Promise<AuthResponse>;
   logout: () => void;
   register: (data: RegisterUserData) => Promise<User>;
   isLoading: boolean;
@@ -92,6 +93,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     }
   });
+
+  // OAuth2 login function
+  const loginWithOAuth2 = async (provider: string) => {
+    setIsLoading(true);
+    try {
+      // Use the popup method instead of redirect
+      const authData = await pb.collection('users').authWithOAuth2({ provider });
+      
+      setIsLoading(false);
+      loadUserData();
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      
+      // Transform the PocketBase response to match the AuthResponse type
+      const authResponse: AuthResponse = {
+        token: authData.token,
+        record: {
+          id: authData.record.id,
+          email: authData.record.email,
+          name: authData.record.name,
+          avatar: authData.record.avatar ? pb.files.getURL(authData.record, authData.record.avatar, { thumb: '100x100' }) : undefined,
+          role: authData.record.role || 'customer',
+          points: authData.record.points || 0
+        }
+      };
+      
+      return authResponse;
+    } catch (err) {
+      setIsLoading(false);
+      setError(err instanceof Error ? err : new Error(`${provider} login failed`));
+      throw err;
+    }
+  };
 
   // Function to load user data
   const loadUserData = async () => {
@@ -207,6 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated,
     user,
     login,
+    loginWithOAuth2,
     logout,
     register,
     isLoading,
