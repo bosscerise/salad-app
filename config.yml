@@ -1,0 +1,6 @@
+tunnel: 7392f952-5d42-49c6-8a79-576a50bcf11b
+credentials-file: D:\.cloudflared\7392f952-5d42-49c6-8a79-576a50bcf11b.json
+ingress:
+  - hostname: sharkapi.fresh-box.me
+    service: http://localhost:8090
+  - service: http_status:404

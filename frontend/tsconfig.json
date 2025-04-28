@@ -6,6 +6,7 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
+    "types": ["pocketbase-jsvm"],
     "paths": {
       "@/*": ["./src/*"]
     }

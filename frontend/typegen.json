@@ -1,0 +1,11 @@
+{
+  "schema": "../backend/schema.json",
+  "output": "./src/pb/types-generated.ts",
+  "moduleType": "ts",
+  "includeRecordId": true,
+  "recordIdType": "string",
+  "includeCollectionId": true,
+  "includeCreatedAndUpdated": true,
+  "schemaSource": "file",
+  "excludeCollections": []
+}

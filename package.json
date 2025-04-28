@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "pocketbase-jsvm": "^0.25.10001"
+  }
+}
