@@ -2,23 +2,50 @@
 
 import { useState } from "react"
 import ReactConfetti from "react-confetti"
+import { useCart } from "../contexts/CartContext"
+import { useCreateOrder } from "../hooks/useQueries"
+import pb from "../pb/pocketbase"
+import { Loader } from "lucide-react"
 
 const Cart = () => {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
-
-  // Hardcoded cart items
-  const cart = [
-    { id: 1, name: "Caesssar Salad", quantity: 2, price: 12.99 },
-    { id: 2, name: "Greek Salad", quantity: 1, price: 10.99 },
-    { id: 3, name: "Cobb Salad", quantity: 3, price: 14.99 }
-  ]
+  
+  // Use the CartContext to get cart items
+  const { cart, removeFromCart, clearCart } = useCart()
+  
+  // Use TanStack Query mutation for creating orders
+  const createOrderMutation = useCreateOrder()
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  const handlePlaceOrder = () => {
-    setShowConfetti(true)
-    setTimeout(() => setShowConfetti(false), 3000)
+  const handlePlaceOrder = async () => {
+    try {
+      // Create order in the database using TanStack Query mutation
+      const orderData = {
+        user_id: pb.authStore.isValid ? pb.authStore.model?.id : undefined,
+        items: JSON.stringify(cart.reduce((acc, item) => {
+          acc[item.id] = item.quantity;
+          return acc;
+        }, {} as Record<string, number>)),
+        total: total,
+        status: 'pending' as const,
+        delivery: false // Default to pickup
+      };
+      
+      await createOrderMutation.mutateAsync(orderData);
+      
+      // Show success animation
+      setShowConfetti(true)
+      
+      // Clear cart after successful order
+      clearCart();
+      
+      setTimeout(() => setShowConfetti(false), 3000)
+    } catch (error) {
+      console.error("Error placing order:", error);
+      // You could add toast notification for errors here
+    }
   }
 
   return (
@@ -42,7 +69,15 @@ const Cart = () => {
                     <span>
                       {item.name} x{item.quantity}
                     </span>
-                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <div className="flex items-center gap-2">
+                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                      <button 
+                        onClick={() => removeFromCart(item.id)}
+                        className="px-2 text-sm text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -52,9 +87,17 @@ const Cart = () => {
               </div>
               <button
                 onClick={handlePlaceOrder}
-                className="w-full px-4 py-2 text-white transition-colors bg-green-500 rounded-md hover:bg-green-600"
+                disabled={createOrderMutation.isPending}
+                className="w-full px-4 py-2 text-white transition-colors bg-green-500 rounded-md hover:bg-green-600 disabled:bg-green-400 disabled:cursor-not-allowed flex justify-center items-center"
               >
-                Place Order
+                {createOrderMutation.isPending ? (
+                  <>
+                    <Loader className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Place Order'
+                )}
               </button>
             </>
           )}

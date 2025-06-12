@@ -1,13 +1,18 @@
 "use client";
-import React, { useState, useMemo, useEffect, useCallback, memo, Suspense, lazy } from 'react';
+import React, { useState, useMemo, useCallback, memo, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus, CircleCheck, ChevronLeft, ChevronRight, Loader } from 'lucide-react';
-import { useIngredients } from '../../../hooks/useIngredients';
-import { useCategories } from '../../../hooks/useCategories';
 import { useToast } from '../../../hooks/useToast';
 import pb from '../../../pb/pocketbase';
-import { userSaladApi } from '../../../services/api';
 import { useCart } from '../../../contexts/CartContext';
+import { 
+  useIngredients, 
+  useCategories, 
+  useIngredientsByCategory, 
+  useUserSalads,
+  useCreateUserSalad
+} from '../../../hooks/useQueries';
+import type { Ingredient, IngredientCategory } from '../../../services/api';
 
 // Memoize the Switch component to prevent unnecessary renders
 const Switch = memo(({
@@ -50,19 +55,6 @@ const Switch = memo(({
 });
 
 Switch.displayName = 'Switch';
-
-// Define type for ingredient to avoid repeated type checks
-interface Ingredient {
-  id: string;
-  name: string;
-  category: string;
-  emoji?: string;
-  price: number;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fats: number;
-}
 
 // Replace virtualized grid with a regular grid that preserves styling
 const IngredientGrid = memo(({ 
@@ -226,31 +218,45 @@ const SelectedIngredientItem = memo(({
 SelectedIngredientItem.displayName = 'SelectedIngredientItem';
 
 type Step = 'base' | 'protein' | 'toppings' | 'dressing' | 'extras';
-type UserSalad = {
-  id: string;
-  name: string;
-  ingredients: Record<string, number>;
-  total_price: number;
-  total_calories: number;
-  total_protein: number;
-  total_carbs: number;
-  total_fats: number;
-  is_favorite: boolean;
-};
 
 // Lazy-loaded components for modals to reduce initial bundle size
 const SaveDialog = lazy(() => import('./dialogs/SaveDialog'));
 const OrderSummaryDialog = lazy(() => import('./dialogs/OrderSummaryDialog'));
 
-export default function SaladBuilder() {
-  // const isInitialRenderRef = useRef(true);
+interface SaladBuilderProps {
+  ingredients?: Ingredient[];
+  categories?: IngredientCategory[];
+}
 
-  // Get data using hooks with progressive loading approach
-  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
+export default function SaladBuilder({ ingredients: initialIngredients, categories: initialCategories }: SaladBuilderProps) {
+  // Get data using TanStack Query hooks
   const [activeStep, setActiveStep] = useState<Step>('base');
-  const { ingredients: currentCategoryIngredients, loading: ingredientsLoading, error: ingredientsError } = useIngredients(activeStep);
   const [initialLoad, setInitialLoad] = useState(true);
-  const { ingredients: allIngredients, loading: allIngredientsLoading } = useIngredients();
+  
+  // Use TanStack Query to fetch categories and ingredients
+  const { 
+    data: categories = initialCategories || [],
+    isLoading: categoriesLoading, 
+    isError: categoriesError 
+  } = useCategories();
+  
+  const { 
+    data: currentCategoryIngredients = [], 
+    isLoading: ingredientsLoading, 
+    isError: ingredientsError 
+  } = useIngredientsByCategory(activeStep);
+  
+  const { 
+    data: allIngredients = initialIngredients || [], 
+    isLoading: allIngredientsLoading 
+  } = useIngredients();
+  
+  const { 
+    data: savedSalads = [], 
+    refetch: refetchSavedSalads 
+  } = useUserSalads();
+  
+  const createSaladMutation = useCreateUserSalad();
 
   const [selectedIngredients, setSelectedIngredients] = useState<Record<string, number>>({});
   const [quantity, setQuantity] = useState(1);
@@ -261,28 +267,9 @@ export default function SaladBuilder() {
 
   const [saladName, setSaladName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedSalads, setSavedSalads] = useState<UserSalad[]>([]);
-  const { addToCart } = useCart();
-
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [showOrderSummary, setShowOrderSummary] = useState(false);
-
-  // Use useCallback for all functions that are passed as props or dependencies
-  const fetchSavedSalads = useCallback(async () => {
-    if (pb.authStore.isValid) {
-      try {
-        const salads = await userSaladApi.getAll();
-        setSavedSalads(salads);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSavedSalads();
-  }, [fetchSavedSalads]);
+  const { addToCart } = useCart();
 
   // Memoize steps to avoid recalculation
   const steps = useMemo(() => {
@@ -290,7 +277,7 @@ export default function SaladBuilder() {
   }, [categories]);
 
   // Auto-select the 'base' category when categories are loaded
-  useEffect(() => {
+  React.useEffect(() => {
     if (!categoriesLoading && categories.length > 0 && initialLoad) {
       // Find the base category or use the first available category
       const baseCategory = categories.find(cat => cat.id === 'base');
@@ -345,6 +332,8 @@ export default function SaladBuilder() {
         if (ingredient && count > 0) {
           acc.price += ingredient.price * count;
           acc.calories += ingredient.calories * count;
+          acc.protein += ingredient.protein * count;
+          acc.carbs += ingredient.carbs * count;
           acc.fats += ingredient.fats * count;
         }
         return acc;
@@ -425,7 +414,7 @@ export default function SaladBuilder() {
       });
       
       if (pb.authStore.isValid) {
-        // Create a saved salad first
+        // Create a saved salad first using our mutation
         const saladData = {
           user_id: pb.authStore.record?.id || '',
           name: saladName || `Salad ${new Date().toLocaleTimeString()}`,
@@ -438,7 +427,7 @@ export default function SaladBuilder() {
           is_favorite: false
         };
         
-        const savedSalad = await userSaladApi.create(saladData);
+        const savedSalad = await createSaladMutation.mutateAsync(saladData);
         
         // Add to cart as a saved salad with full ingredient info
         await addToCart({
@@ -472,7 +461,7 @@ export default function SaladBuilder() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedIngredients, saladName, totals, quantity, addToCart]);
+  }, [selectedIngredients, saladName, totals, quantity, addToCart, createSaladMutation]);
 
   const handleSaveSalad = useCallback(async () => {
     if (!pb.authStore.isValid) {
@@ -481,8 +470,6 @@ export default function SaladBuilder() {
     }
     
     try {
-      setIsSaving(true);
-      
       // Auto-generate name if user didn't provide one
       const name = saladName.trim() || `Salad ${savedSalads.length + 1}`;
       
@@ -498,10 +485,8 @@ export default function SaladBuilder() {
         is_favorite: false
       };
       
-      const savedSalad = await userSaladApi.create(saladData);
-      
-      // Update local state
-      setSavedSalads(prev => [savedSalad, ...prev]);
+      // Use the mutation from TanStack Query
+      await createSaladMutation.mutateAsync(saladData);
       
       // Reset form
       setSaladName('');
@@ -511,10 +496,8 @@ export default function SaladBuilder() {
     } catch (error) {
       console.error('Error saving salad:', error);
       toast?.error('Failed to save your salad');
-    } finally {
-      setIsSaving(false);
     }
-  }, [saladName, savedSalads.length, selectedIngredients, totals]);
+  }, [saladName, savedSalads.length, selectedIngredients, totals, createSaladMutation, toast]);
 
   // Memoize category lookup for better performance
   const getCategoryName = useCallback(
@@ -556,8 +539,9 @@ export default function SaladBuilder() {
     }).filter(Boolean); // Filter out null values
   }, [selectedIngredients, allIngredients, getCategoryName, handleRemoveIngredient, handleAddIngredient]);
 
-  // Add progressive loading indicator
-  if (categoriesLoading || allIngredientsLoading) {
+  // Add loading indicator
+  const isLoading = categoriesLoading || allIngredientsLoading;
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center">
@@ -569,13 +553,14 @@ export default function SaladBuilder() {
   }
 
   // Error state
-  if (categoriesError || ingredientsError) {
+  const hasError = categoriesError || ingredientsError;
+  if (hasError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="max-w-md p-6 text-center rounded-lg bg-red-50">
           <h2 className="text-xl font-bold text-red-700">Something went wrong</h2>
           <p className="mt-2 text-red-600">
-            {categoriesError?.message || ingredientsError?.message}
+            There was an error loading the ingredients
           </p>
           <button 
             onClick={() => window.location.reload()}
@@ -637,7 +622,7 @@ export default function SaladBuilder() {
                     {index < currentStepIndex ? (
                       <CircleCheck size={16} />
                     ) : (
-                      categories.find(c => c.id === step)?.icon
+                      categories.find(c => c.id === step)?.emoji
                     )}
                   </button>
                   <span className="mt-1 text-xs text-gray-600 sm:text-sm dark:text-gray-300">
@@ -781,10 +766,10 @@ export default function SaladBuilder() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowSaveDialog(true)}
-                    disabled={!Object.keys(selectedIngredients).length}
+                    disabled={!Object.keys(selectedIngredients).length || createSaladMutation.isPending}
                     className="px-4 py-2 text-green-600 border border-green-600 rounded-xl hover:bg-green-50 disabled:opacity-50"
                   >
-                    Save Salad
+                    {createSaladMutation.isPending ? 'Saving...' : 'Save Salad'}
                   </button>
                   <button
                     onClick={() => {
@@ -819,7 +804,7 @@ export default function SaladBuilder() {
             saladName={saladName}
             setSaladName={setSaladName}
             savedSalads={savedSalads}
-            isSaving={isSaving}
+            isSaving={createSaladMutation.isPending}
             onSave={handleSaveSalad}
             onClose={() => setShowSaveDialog(false)}
           />

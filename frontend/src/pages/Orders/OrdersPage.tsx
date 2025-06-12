@@ -1,14 +1,15 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Truck, Clock, CheckCircle, XCircle, ShoppingBag, RefreshCcw, Search } from 'lucide-react';
 import Header from '../../components/Header';
-import { pb, userSaladApi, ingredientApi, categoryApi } from '../../services/api';
+import { pb } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import LoadingSpinner from '../Menu/components/LoadingSpinner';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { toast as toastNotify } from 'react-hot-toast';
+import { useOrderSubscription, useOrders, useIngredients, useCategories, useUserSalads } from '../../hooks/useQueries';
 
 // Define the Order type with rendered items
 interface OrderWithDetails {
@@ -66,36 +67,20 @@ type OrderRecord = {
   updated: string;
 };
 
-// Add this function before fetchOrders in the OrdersPage component
-const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithDetails[]> => {
+const formatOrderItems = async (orderRecords: OrderRecord[], ingredients: any[], userSalads: any[], categories: any[]): Promise<OrderWithDetails[]> => {
   try {
-    // Get all ingredients and categories in a single request for efficiency
-    const [ingredients, userSalads, categories] = await Promise.all([
-      ingredientApi.getAll(),
-      pb.authStore.isValid ? userSaladApi.getAll() : Promise.resolve([]),
-      categoryApi.getAll().catch(() => [])
-    ]);
-
     return Promise.all(orderRecords.map(async (order) => {
-      // First check if we have items_detail (new format with detailed info)
       if (order.items_detail && Array.isArray(order.items_detail)) {
-        // Process the detailed item information
         const formattedItems = order.items_detail.map(detail => {
-          // Handle customized premade salads
           if (detail.type === 'premade' && (detail.customized || detail.name?.includes('Custom'))) {
-            // Process customized ingredients
             const ingredients_array = [];
-            
             if (detail.customizations) {
-              // Ensure we're working with an array format
               const customizationsArray = Array.isArray(detail.customizations) 
                 ? detail.customizations 
                 : Object.entries(detail.customizations).map(([id, qty]) => ({
                     id,
                     quantity: typeof qty === 'number' ? qty : Number(qty)
                   }));
-              
-              // Map through customizations and find ingredient details
               for (const ing of customizationsArray) {
                 const ingredient = ingredients.find(i => i.id === ing.id);
                 if (ingredient) {
@@ -109,7 +94,6 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
                 }
               }
             }
-            
             return {
               id: detail.id,
               type: 'premade' as const,
@@ -124,18 +108,13 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
           }
 
           if (detail.type === 'saved-salad') {
-            // Format saved salad
-            // Process ingredients if available
             const ingredients_array = [];
             if (detail.ingredients) {
-              // Handle both object with ID keys and array format
               if (Array.isArray(detail.ingredients)) {
                 ingredients_array.push(...detail.ingredients);
               } else {
-                // Convert object format to array format
                 for (const [ingId, ingInfo] of Object.entries(detail.ingredients)) {
                   if (typeof ingInfo === 'object' && ingInfo !== null) {
-                    // New format with full ingredient info
                     const typedIngInfo = ingInfo as {
                       name?: string;
                       quantity?: number;
@@ -150,7 +129,6 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
                       emoji: typedIngInfo.emoji || '🥬'
                     });
                   } else {
-                    // Old format with just quantity
                     const ingredient = ingredients.find(ing => ing.id === ingId);
                     if (ingredient) {
                       ingredients_array.push({
@@ -165,7 +143,6 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
                 }
               }
             }
-
             return {
               id: detail.id,
               type: 'saved-salad' as const,
@@ -177,15 +154,12 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
               ingredientCount: ingredients_array.length
             };
           } else {
-            // Format regular ingredient
             const ingredient = ingredients.find(ing => ing.id === detail.id);
-            
             let categoryName = '';
             if (ingredient?.category) {
               const category = categories.find(cat => cat.id === ingredient.category);
               categoryName = category?.name || '';
             }
-            
             return {
               id: detail.id,
               type: 'ingredient' as const,
@@ -197,15 +171,12 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
             };
           }
         });
-
         return {
           ...order,
           formattedItems: formattedItems.filter(Boolean)
         };
       } else {
-        // Legacy format processing - handle items object
         let orderItems = order.items;
-        
         if (typeof orderItems === 'string') {
           try {
             orderItems = JSON.parse(orderItems);
@@ -214,22 +185,15 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
             orderItems = {};
           }
         }
-        
         if (!orderItems || typeof orderItems !== 'object') {
           orderItems = {};
         }
-        
         const formattedItems = [];
-        
-        // Process each item ID
         for (const [itemId, quantity] of Object.entries(orderItems)) {
           if (itemId.startsWith('salad_')) {
-            // Handle saved salad reference
             const saladId = itemId.replace('salad_', '');
             const salad = userSalads.find(s => s.id === saladId);
-            
             if (salad) {
-              // Try to process ingredients if available
               const ingredients_array = [];
               if (salad.ingredients) {
                 for (const [ingId, ingQty] of Object.entries(salad.ingredients)) {
@@ -245,7 +209,6 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
                   }
                 }
               }
-              
               formattedItems.push({
                 id: itemId,
                 type: 'saved-salad' as const,
@@ -258,10 +221,8 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
               });
             }
           } else if (itemId.includes('_from_')) {
-            // These are processed in groups, skip individual processing
             continue;
           } else {
-            // Handle regular ingredient
             const ingredient = ingredients.find(ing => ing.id === itemId);
             if (ingredient) {
               let categoryName = '';
@@ -269,7 +230,6 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
                 const category = categories.find(cat => cat.id === ingredient.category);
                 categoryName = category?.name || '';
               }
-              
               formattedItems.push({
                 id: itemId,
                 type: 'ingredient' as const,
@@ -282,12 +242,8 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
             }
           }
         }
-        
-        // Process ingredients from the same salad to group them
         const fromSaladItems = Object.entries(orderItems).filter(([key]) => key.includes('_from_'));
-        
         if (fromSaladItems.length > 0) {
-          // Group by salad ID with proper typing
           const saladGroups: Record<string, {
             id: string;
             name: string;
@@ -300,10 +256,8 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
             }>;
             totalPrice: number;
           }> = {};
-          
           for (const [itemKey, quantity] of fromSaladItems) {
             const [ingredientId, saladId] = itemKey.split('_from_');
-            
             if (!saladGroups[saladId]) {
               saladGroups[saladId] = {
                 id: saladId,
@@ -311,15 +265,11 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
                 ingredients: [],
                 totalPrice: 0
               };
-              
-              // Try to find original salad name
               const salad = userSalads.find(s => s.id === saladId);
               if (salad) {
                 saladGroups[saladId].name = salad.name;
               }
             }
-            
-            // Find ingredient details
             const ingredient = ingredients.find(ing => ing.id === ingredientId);
             if (ingredient) {
               saladGroups[saladId].ingredients.push({
@@ -329,12 +279,9 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
                 quantity: Number(quantity),
                 price: ingredient.price || 0
               });
-              
               saladGroups[saladId].totalPrice += (ingredient.price || 0) * Number(quantity);
             }
           }
-          
-          // Add salad groups to formatted items
           for (const [saladId, group] of Object.entries(saladGroups)) {
             formattedItems.push({
               id: saladId,
@@ -348,7 +295,6 @@ const formatOrderItems = async (orderRecords: OrderRecord[]): Promise<OrderWithD
             });
           }
         }
-        
         return {
           ...order,
           formattedItems: formattedItems.filter(Boolean)
@@ -560,8 +506,6 @@ const OrderCard = ({ order, onReorder, showReorderButton = true, recentlyUpdated
 };
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -570,112 +514,79 @@ export default function OrdersPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { reorderFromHistory } = useCart();
-
-  const fetchOrders = useCallback(async () => {
-    if (!pb.authStore.isValid) return;
-
-    try {
-      setIsLoading(true);
-
-      const orderRecords = await pb.collection('orders').getFullList({
-        filter: `user_id = "${pb.authStore.model?.id}"`,
-        sort: `${sortOrder === 'newest' ? '-' : ''}created`,
-      });
-
-      const processedOrders = await formatOrderItems(orderRecords as unknown as OrderRecord[]);
-      setOrders(processedOrders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      toast?.error('Failed to load your orders');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [sortOrder]);
-
+  
+  const userId = pb.authStore.isValid ? pb.authStore.model?.id : '';
+  const filter = `user_id = "${userId}"`;
+  
+  const { 
+    data: orders = [], 
+    isLoading,
+    refetch
+  } = useOrders(userId);
+  
+  const { data: ingredients = [] } = useIngredients();
+  const { data: categories = [] } = useCategories();
+  const { data: userSalads = [] } = useUserSalads();
+  
+  useOrderSubscription(userId);
+  
   useEffect(() => {
-    let isMounted = true;
+    if (!pb.authStore.isValid) return;
+    
+    const onRecordChange = async (data: any) => {
+      if (data.record?.user_id === userId) {
+        console.log('Realtime update received:', data);
 
-    if (isMounted) {
-      fetchOrders();
-    }
-
-    return () => {
-      isMounted = false;
+        if (data.action === 'create') {
+          refetch();
+          toastNotify.success('New order created!');
+        } else if (data.action === 'update') {
+          refetch();
+          
+          setRecentlyUpdated(data.record.id);
+          setTimeout(() => setRecentlyUpdated(null), 5000);
+          
+          toastNotify.success(
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              <span>
+                Order #{data.record.id.substring(0, 6)} status changed to <strong>{data.record.status}</strong>
+              </span>
+            </div>
+          );
+        } else if (data.action === 'delete') {
+          refetch();
+          toastNotify('An order was removed');
+        }
+      }
     };
-  }, [fetchOrders]);
-
-  useEffect(() => {
-    if (!pb.authStore.isValid) return;
-
-    // Define interface for unsubscribe function returned by PocketBase subscribe
-    interface UnsubscribeFunc {
-      (): void;
-    }
     
-    // Define type for the promise that resolves to an unsubscribe function
-    type UnsubscribePromise = Promise<UnsubscribeFunc | null>;
+    let unsubscribePromise: any = null;
     
-    let unsubscribePromise: UnsubscribePromise | null = null;
-    let isSubscribed = true;
-
     const setupSubscription = async () => {
       try {
-        unsubscribePromise = pb.collection('orders').subscribe('*', async (data) => {
-          if (!isSubscribed) return;
-
-          if (data.record?.user_id === pb.authStore.model?.id) {
-            console.log('Realtime update received:', data);
-
-            if (data.action === 'create') {
-              const processedOrder = await formatOrderItems([data.record] as unknown as OrderRecord[]);
-              setOrders((prev) => [processedOrder[0], ...prev]);
-              toastNotify.success('New order created!');
-            } else if (data.action === 'update') {
-              const processedOrder = await formatOrderItems([data.record as unknown as OrderRecord]);
-              setOrders((prev) => prev.map((order) => (order.id === data.record.id ? processedOrder[0] : order)));
-
-              const prevOrder = orders.find((o) => o.id === data.record.id);
-              if (prevOrder && prevOrder.status !== data.record.status) {
-                setRecentlyUpdated(data.record.id);
-                setTimeout(() => setRecentlyUpdated(null), 5000);
-
-                toastNotify.success(
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2" />
-                    <span>
-                      Order #{data.record.id.substring(0, 6)} status changed to <strong>{data.record.status}</strong>
-                    </span>
-                  </div>
-                );
-              }
-            } else if (data.action === 'delete') {
-              setOrders((prev) => prev.filter((order) => order.id !== data.record.id));
-              toastNotify('An order was removed');
-            }
-          }
-        });
+        unsubscribePromise = pb.collection('orders').subscribe('*', onRecordChange);
       } catch (error) {
         console.error('Failed to subscribe to order updates:', error);
       }
     };
-
+    
     setupSubscription();
-
+    
     return () => {
-      isSubscribed = false;
       if (unsubscribePromise) {
         unsubscribePromise
-          .then((unsubscribeFunc) => {
+          .then((unsubscribeFunc: Function) => {
             if (typeof unsubscribeFunc === 'function') {
               unsubscribeFunc();
             }
           })
-          .catch((err) => {
+          .catch((err: Error) => {
             console.error('Error unsubscribing:', err);
           });
       }
     };
-  }, []);
+  }, [userId, refetch]);
 
   const handleReorder = async (order: OrderWithDetails) => {
     try {
@@ -684,7 +595,6 @@ export default function OrdersPage() {
         return;
       }
 
-      // Match the CartItem interface with the one in CartContext
       interface CartItem {
               type: 'ingredient' | 'saved-salad' | 'premade';
               id: string;
@@ -696,9 +606,7 @@ export default function OrdersPage() {
               customizations?: Record<string, number>;
             }
 
-      // Convert array customizations to record format if needed
       const processedItems = order.items_detail?.map(item => {
-        // Create a new object that matches Partial<CartItem>
         const newItem: Partial<CartItem> = {
           type: item.type,
           id: item.id,
@@ -708,10 +616,8 @@ export default function OrdersPage() {
           customized: item.customized
         };
         
-        // Handle ingredients if present - convert to Record<string, number> if it's an array
         if (item.ingredients) {
           if (Array.isArray(item.ingredients)) {
-            // Convert array of ingredients to record format
             const ingredientsRecord: Record<string, number> = {};
             item.ingredients.forEach(ing => {
               if (typeof ing === 'object' && ing.id) {
@@ -720,22 +626,18 @@ export default function OrdersPage() {
             });
             newItem.ingredients = ingredientsRecord;
           } else {
-            // Already in record format
             newItem.ingredients = item.ingredients as Record<string, number>;
           }
         }
         
-        // Handle customizations - always convert to Record<string, number>
         if (item.customizations) {
           const customizationsRecord: Record<string, number> = {};
           
           if (Array.isArray(item.customizations)) {
-            // Convert array format to record
             item.customizations.forEach(c => {
               customizationsRecord[c.id] = c.quantity;
             });
           } else {
-            // Already in record format, copy values ensuring they're numbers
             Object.entries(item.customizations).forEach(([key, value]) => {
               customizationsRecord[key] = typeof value === 'number' ? value : Number(value);
             });
@@ -755,6 +657,35 @@ export default function OrdersPage() {
       toast?.error('Failed to reorder. Please try again.');
     }
   };
+
+  const filteredOrders = orders
+    .filter(order => {
+      if (selectedStatus !== 'all' && order.status !== selectedStatus) {
+        return false;
+      }
+      if (searchText) {
+        const searchLower = searchText.toLowerCase();
+        if (order.id.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        if (order.formattedItems?.some(item => 
+          item.name.toLowerCase().includes(searchLower)
+        )) {
+          return true;
+        }
+        const dateStr = new Date(order.created).toLocaleDateString();
+        if (dateStr.includes(searchText)) {
+          return true;
+        }
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.created).getTime();
+      const dateB = new Date(b.created).getTime();
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-emerald-50 to-green-50">
@@ -829,7 +760,7 @@ export default function OrdersPage() {
         </AnimatePresence>
 
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <div className="text-sm text-gray-600">Showing {orders.length} orders</div>
+          <div className="text-sm text-gray-600">Showing {filteredOrders.length} orders</div>
         </div>
 
         <div className="space-y-4">
@@ -837,9 +768,9 @@ export default function OrdersPage() {
             <div className="py-12">
               <LoadingSpinner />
             </div>
-          ) : orders.length > 0 ? (
+          ) : filteredOrders.length > 0 ? (
             <AnimatePresence mode="wait">
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <motion.div
                   key={order.id}
                   layout

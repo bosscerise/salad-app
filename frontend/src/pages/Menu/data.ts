@@ -1,6 +1,8 @@
 import { Category, Salad, SuggestedCombination } from './types';
-import { pb } from '../../services/api';
-import { Ingredient, IngredientCategory as ApiIngredientCategory } from '../../services/api';
+import { pb } from '../../pb/pocketbase';
+import { Ingredient, IngredientCategory as ApiIngredientCategory } from '../../pb/pocketbase';
+pb.autoCancellation(false);
+
 
 // Extend the imported IngredientCategory type to include emoji
 interface IngredientCategory extends ApiIngredientCategory {

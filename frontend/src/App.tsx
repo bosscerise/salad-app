@@ -3,7 +3,8 @@ import {
   Routes, 
   Route, 
   Link,
-  useLocation
+  useLocation,
+  BrowserRouter
 } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -101,17 +102,41 @@ function AppContent() {
             <CartProvider>
               <div className="min-h-screen bg-gray-100">
                 <Routes location={location} key={location.pathname}>
+                  {/* Base paths - support for both root and /salad-app */}
                   <Route path="/" element={<Homepage />} />
+                  <Route path="/salad-app" element={<Homepage />} />
+                  
+                  {/* Regular routes with additional support for /salad-app path prefix */}
                   <Route path="/menu" element={<Menu />} />
+                  <Route path="/salad-app/menu" element={<Menu />} />
+                  
                   <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/salad-app/auth" element={<AuthPage />} />
+                  
                   <Route path="/rewards" element={<RewardsPage />} />
+                  <Route path="/salad-app/rewards" element={<RewardsPage />} />
+                  
                   <Route path="/orders" element={<OrdersPage />} />
+                  <Route path="/salad-app/orders" element={<OrdersPage />} />
+                  
                   <Route path="/cart" element={<CartPage />} />
+                  <Route path="/salad-app/cart" element={<CartPage />} />
+                  
                   <Route path="/salads/:id" element={<SaladDetailPage />} />
+                  <Route path="/salad-app/salads/:id" element={<SaladDetailPage />} />
+                  
                   <Route path="/salad/:id" element={<SavedSaladPage />} />
+                  <Route path="/salad-app/salad/:id" element={<SavedSaladPage />} />
+                  
                   <Route path="/salad/saved-salads" element={<SavedSaladPage />} />
+                  <Route path="/salad-app/salad/saved-salads" element={<SavedSaladPage />} />
+                  
                   <Route path="/edit-salad/:id" element={<SavedSaladPage />} />
+                  <Route path="/salad-app/edit-salad/:id" element={<SavedSaladPage />} />
+                  
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/salad-app/admin" element={<AdminDashboard />} />
+                  
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
@@ -124,11 +149,16 @@ function AppContent() {
 }
 
 // Main App component
-function App() {  
+function App() {
+  // Get the base path from environment or default to "/salad-app"  
+  const basePath = import.meta.env.VITE_BASE_PATH || "/salad-app";
+  
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <BrowserRouter basename={basePath}>
+          <AppContent />
+        </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
   );
