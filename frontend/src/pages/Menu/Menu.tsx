@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import SaladGrid from './components/SaladGrid';
 import SaladBuilder from './components/SaladBuilder';
-import MenuSidebar from './components/MenuSidebar';
+// import MenuSidebar from './components/MenuSidebar';
 import MenuTabs from './components/MenuTabs';
 import { menuCategories } from '../../services/api';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -28,27 +28,19 @@ function Menu() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen md:flex-row bg-gray-50">
       {/* Mobile menu tabs at the top for small screens */}
-      <div className="md:hidden mb-4">
+      <div className="mb-4 md:hidden">
         <MenuTabs activeTab={activeTab} setActiveTab={setActiveTab} />
       </div>
       
       {/* Sidebar with categories */}
-      <div className="w-full md:w-64 bg-white shadow md:shadow-md p-4">
-        <MenuSidebar 
-          categories={menuCategories}
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-        />
-      </div>
+
       
       {/* Main content area */}
       <div className="flex-1 p-4">
         {/* Desktop menu tabs for larger screens */}
-        <div className="hidden md:block mb-6">
+        <div className="hidden mb-6 md:block">
           <MenuTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
         

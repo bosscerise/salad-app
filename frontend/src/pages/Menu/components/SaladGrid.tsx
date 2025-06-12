@@ -3,7 +3,7 @@ import { ShoppingCart, Eye } from 'lucide-react';
 import { Salad } from '../../../services/api';
 import { useCart } from '../../../contexts/CartContext';
 import { useState } from 'react';
-import SaladQuickView from './SaladQuickView';
+// import SaladQuickView from './SaladQuickView';
 
 interface SaladGridProps {
   salads: Salad[];
@@ -129,16 +129,7 @@ export default function SaladGrid({
         ))}
       </motion.div>
       
-      {selectedSalad && (
-        <SaladQuickView
-          salad={selectedSalad}
-          onClose={() => setSelectedSalad(null)}
-          onAddToCart={() => {
-            handleAddToCart(selectedSalad);
-            setSelectedSalad(null);
-          }}
-        />
-      )}
+
     </>
   );
 }
